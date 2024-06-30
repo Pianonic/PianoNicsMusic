@@ -39,7 +39,3 @@ We welcome contributions to PianoNic's Music Bot! Feel free to fork the reposito
 
 ## License
 This project is licensed under the [MIT License](LICENSE). You are free to use, modify, and distribute it according to the license.
-
-## Support
-For issues, suggestions, or contributions, please open an issue in the GitHub repository.
-```
