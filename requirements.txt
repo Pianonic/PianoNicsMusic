@@ -1,0 +1,8 @@
+py-cord
+PyNaCl
+pytube
+yt_dlp
+beautifulsoup4
+spotdl
+spotipy
+python-dotenv
