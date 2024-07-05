@@ -5,7 +5,7 @@ class QueueObj:
     self.author = author
     self.link = link
 
-def CreateEmbed(title, contents, image=None):
+def create_embed(title, contents, image=None):
     if all(isinstance(item, str) for item in contents):
         embed=discord.Embed(title=title, color=0x282841)
         if(image):
