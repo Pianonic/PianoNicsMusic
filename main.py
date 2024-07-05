@@ -1,41 +1,36 @@
+# Standard library imports
 import asyncio
 import base64
-from enum import Enum
 import io
 import json
 import os
 import random
+from enum import Enum
+from typing import List
 
-import websockets
-from Library import GenerateEmbed, FindPlatform, SendRVCRequests, SongInformation
+# Third-party imports
 import discord
+import websockets
 from discord.commands import Option, OptionChoice
 from discord.ext import commands
-
 from dotenv import load_dotenv
+
+# Local application imports
+from discord_utils import embed_generator
+from platform_handlers import audio_content_type_finder, music_platform_finder
+from server_requests import rvc_server_pinger
+from enums.status import Status
+from models.guild_music_information import GuildMusicInformation
 
 load_dotenv()
 
-class Status(Enum):
-    IDLE = 0
-    IS_PLAYING = 1
-
-class GuildInfoObj:
-  def __init__(self, id, voice_channel, voice_client, bot_status, queue_object_list, loop_queue):
-    self.id = id
-    self.voice_channel = voice_channel
-    self.voice_client = voice_client
-    self.bot_status = bot_status
-    self.queue_object_list = queue_object_list
-    self.loop_queue = loop_queue
-
-guilds_info = []
+guilds_info = List[GuildMusicInformation]
 model_choices = []
 
-isServerRunning = SendRVCRequests.check_connection()
+isServerRunning = rvc_server_pinger.check_connection()
 
 if(isServerRunning):
-    model_choices, index_choices = SendRVCRequests.fetch_choices()
+    model_choices, index_choices = rvc_server_pinger.fetch_choices()
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -73,25 +68,6 @@ async def delete_guild(guild_id):
         if guild.id == guild_id:
             guilds_info.pop(index)
             break
-
-@bot.command(aliases=['halt', 'cease', 'end', 'terminate', 'shutdown', 'suspend'])
-async def stop(ctx):
-    global guilds_info
-    
-    for guild in guilds_info:
-        if guild.id == ctx.guild.id:
-            current_guild = guild
-            break
-
-    if current_guild:
-        current_guild.loop_queue = False
-        current_guild.queue_object_list = []
-        current_guild.voice_client.stop()
-    
-    if ctx.message:
-        await ctx.message.add_reaction("⏹️")
-    else:
-        await ctx.respond("Stopped playing ⏹️")
 
 @bot.command(aliases=['next', 'advance', 'skip_song', 'move_on', 'play_next'])
 async def skip(ctx):
@@ -163,7 +139,6 @@ async def resume(ctx):
         await ctx.message.add_reaction("▶️")
     else:
         await ctx.respond("Resumed the music ▶️")
-
 
 @bot.command(aliases=['lp', 'repeat', 'cycle', 'toggle_loop', 'toggle_repeat'])
 async def loop(ctx):
@@ -251,19 +226,18 @@ async def help(ctx):
 
     
 
-async def get_current_guild(ctx):
+async def get_guild_music_information(guild_id: int):
     global guilds_info
 
     for guild in guilds_info:
-        if guild.id == ctx.guild.id:
+        if guild.id is guild_id:
             return guild
+        
+async def create_new_guid_music_information(guild_id: int, voice_channel: discord.VoiceChannel):
+    global guilds_info
 
-    guild_id = ctx.guild.id
-    voice_channel = ctx.author.voice.channel
-
-    new_guild = GuildInfoObj(id=guild_id, voice_channel=voice_channel, voice_client=None, bot_status=Status.IDLE, queue_object_list=[], loop_queue=False)
+    new_guild = GuildMusicInformation(id=guild_id, voice_channel=voice_channel)
     guilds_info.append(new_guild)
-    #await ctx.send("New Guild was Created!")
     return new_guild
 
 async def add_to_queue(guild_id, url):
@@ -291,10 +265,10 @@ async def play(ctx, guildId: int):
         query = guild.queue_object_list.pop(0)
 
         try:
-            songList = SongInformation.get_song_info(query)
+            songList = audio_content_type_finder.get_audio_content_type(query)
 
             if (len(songList) != 1):
-                await ctx.send(embed=GenerateEmbed.CreateEmbed("📋 Adding Items to Queue 📋", f"Added **{len(songList)}** Songs"))
+                await ctx.send(embed=embed_generator.CreateEmbed("📋 Adding Items to Queue 📋", f"Added **{len(songList)}** Songs"))
                 for song in songList:
                     guild.queue_object_list.append(song)
                 continue
@@ -303,7 +277,7 @@ async def play(ctx, guildId: int):
             continue
 
         try:
-            toPlay = await FindPlatform.find_platform(ctx, query)
+            toPlay = await music_platform_finder.find_platform(ctx, query)
         except Exception as e:
             await ctx.send("`An error occurred: {}`".format(e))
             continue
@@ -318,7 +292,7 @@ async def play(ctx, guildId: int):
         # Play the audio
         guild.voice_client.play(player)
         try:
-            await toPlay.message.edit(embed=GenerateEmbed.CreateEmbed("💿 Now Playing 💿", f"**{toPlay.data.song_name}** By **{toPlay.data.author}**", toPlay.data.image ))
+            await toPlay.message.edit(embed=embed_generator.CreateEmbed("💿 Now Playing 💿", f"**{toPlay.data.song_name}** By **{toPlay.data.author}**", toPlay.data.image ))
         except:
             print("Error editing message")
             
@@ -339,17 +313,20 @@ async def play(ctx, guildId: int):
 @bot.command(name='play', aliases=['p', 'pl', 'play_song', 'queue', 'add', 'enqueue'])
 async def play_command(ctx, *, query=None):
 
-    first_word = query.split()[0].lower() if query else None
-    if first_word == "earrape":
-        await ctx.reply("The audio will play in earrape mode.")
-        query = ' '.join(query.split()[1:])
+    # first_word = query.split()[0].lower() if query else None
+    # if first_word == "earrape":
+    #     await ctx.reply("The audio will play in earrape mode.")
+    #     query = ' '.join(query.split()[1:])
 
-    current_guild = await get_current_guild(ctx)
+    current_guild = await get_guild_music_information(ctx.guild.id)
+
+    if not current_guild:
+        current_guild = await create_new_guid_music_information(ctx.guild.id, ctx.author.voice.channel)
 
     if not current_guild.voice_client:
         voice_client = await current_guild.voice_channel.connect()
         await map_voice_client(current_guild.id, voice_client)
-        current_guild = await get_current_guild(ctx)
+        current_guild = await get_guild_music_information(ctx)
 
     if current_guild.bot_status == Status.IDLE:
         await add_to_queue(current_guild.id, query)
@@ -365,10 +342,6 @@ async def play_command(ctx, *, query=None):
 ###################################################
 ################# SLASH COMMANDS ##################
 ###################################################
-
-@bot.slash_command(name="stop", description="Stops the currently playing audio")
-async def stop_slash(ctx):
-    await stop(ctx)
 
 @bot.slash_command(name="skip", description="Skips the currently playing audio")
 async def skip_slash(ctx):
@@ -464,7 +437,7 @@ if isServerRunning:
             message = await websocket.recv()
             data = json.loads(message)
 
-            dc_message = await ctx.respond(embed=GenerateEmbed.CreateEmbed("🗣️ AI Singer 🗣️", data["message"]))
+            dc_message = await ctx.respond(embed=embed_generator.CreateEmbed("🗣️ AI Singer 🗣️", data["message"]))
 
             # Listen for updates from the server
             while True:
@@ -473,18 +446,18 @@ if isServerRunning:
                 #print(data)
                 if "message" in data:
                     # Send a new message with the update
-                    await dc_message.edit(embed=GenerateEmbed.CreateEmbed("🗣️ AI Singer 🗣️", data["message"]))
+                    await dc_message.edit(embed=embed_generator.CreateEmbed("🗣️ AI Singer 🗣️", data["message"]))
                 elif "file" in data:
                     file_data = base64.b64decode(data["file"])
                     file_like_object = io.BytesIO(file_data)
-                    edited_message = await dc_message.edit(embed=GenerateEmbed.CreateEmbed("🗣️ AI Singer 🗣️", "Finished"), file=discord.File(file_like_object, filename="unknown.mp3"))
+                    edited_message = await dc_message.edit(embed=embed_generator.CreateEmbed("🗣️ AI Singer 🗣️", "Finished"), file=discord.File(file_like_object, filename="unknown.mp3"))
                     file_url = edited_message.attachments[0].url
 
                     await play_command(ctx, query=file_url)
                 elif "error" in data:
                     await dc_message.edit(f"Error from server: {data['error']}")
                 elif "queue_position" in data:
-                    await dc_message.edit(embed=GenerateEmbed.CreateEmbed("🗣️ AI Singer 🗣️", f"Your request is at position {data['queue_position']} in the queue."))
+                    await dc_message.edit(embed=embed_generator.CreateEmbed("🗣️ AI Singer 🗣️", f"Your request is at position {data['queue_position']} in the queue."))
                 elif "status" in data:
                     print("made it out")
                     break

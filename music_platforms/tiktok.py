@@ -1,14 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
+from models.music_information import MusicInformation
 
-class Data:
-    def __init__(self, link, song_name, author, image):
-        self.link = link
-        self.song_name = song_name
-        self.author = author
-        self.image = image
-
-async def GetTTLink(downloadURL):
+async def get_streaming_url(downloadURL):
     requestURL = "https://tmate.cc"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -44,13 +38,14 @@ async def GetTTLink(downloadURL):
         download_links = soup.find_all('a', href=True)
         download_link = download_links[0]['href']
 
-        print("Title:", title)
-        print("Author:", author)
-        print("Image URL:", image_url)
-        print("Link:", download_link)
+        # Print the extracted data
+        # print("Title:", title)
+        # print("Author:", author)
+        # print("Image URL:", image_url)
+        # print("Link:", download_link)
     else:
         print("Error:", response.status_code)
 
-    return Data(link=download_link, song_name=title, author=author, image=image_url)
+    return MusicInformation(streaming_url=download_link, song_name=title, author=author, image_url=image_url)
   
 #GetTTLink("https://www.tiktok.com/@aydenmekus/video/7214283304256818478?is_from_webapp=1&sender_device=pc&web_id=7348931770685228576")

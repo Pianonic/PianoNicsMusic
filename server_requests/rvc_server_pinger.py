@@ -1,6 +1,4 @@
 import requests
-import json
-import base64
 
 def fetch_choices():
     try:
