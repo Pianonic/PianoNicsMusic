@@ -1,8 +1,9 @@
 from enum import Enum
 
 class Platform(Enum):
-    TIK_TOK = 0
-    SPOTIFY = 1
-    YOUTUBE = 2
-    SOUND_CLOUD = 3
-    ANYTHING_ELSE = 4
+    NO_URL = 0
+    TIK_TOK = 1
+    SPOTIFY = 2
+    YOUTUBE = 3
+    SOUND_CLOUD = 4
+    ANYTHING_ELSE = 5

@@ -12,7 +12,7 @@ from enums.platform import Platform
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
 
-def get_audio_content_type(query_url: str, platform: Platform) -> AudioContentType:
+async def get_audio_content_type(query_url: str, platform: Platform) -> AudioContentType:
     if platform is Platform.YOUTUBE:
         parse_result = urlparse(query_url)
         query_params = parse_qs(parse_result.query)
@@ -67,6 +67,8 @@ def get_audio_content_type(query_url: str, platform: Platform) -> AudioContentTy
         else:
             return AudioContentType.NOT_SUPPORTED
 
+    elif platform is Platform.NO_URL:
+        return AudioContentType.QUERY
         # track_links = []
         # if "/playlist/" in url:
             

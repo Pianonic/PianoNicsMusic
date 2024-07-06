@@ -6,3 +6,4 @@ beautifulsoup4
 spotdl
 spotipy
 python-dotenv
+ytmusicapi

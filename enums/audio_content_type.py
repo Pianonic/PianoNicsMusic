@@ -2,8 +2,9 @@ from enum import Enum
 
 class AudioContentType(Enum):
     NOT_SUPPORTED = 1
-    SINGLE_SONG = 2
-    PLAYLIST = 3
-    RADIO = 4
-    ALBUM = 5
+    QUERY = 2
+    SINGLE_SONG = 3
+    PLAYLIST = 4
+    RADIO = 5
+    ALBUM = 6
     
