@@ -482,7 +482,7 @@ if isServerRunning:
 
                     await play_command(ctx, query=file_url)
                 elif "error" in data:
-                    await dc_message.edit(f"Error from server: {data['error']}")
+                    await dc_message.edit(content=f"Error from server: {data['error']}")
                 elif "queue_position" in data:
                     await dc_message.edit(embed=GenerateEmbed.CreateEmbed("🗣️ AI Singer 🗣️", f"Your request is at position {data['queue_position']} in the queue."))
                 elif "status" in data:
