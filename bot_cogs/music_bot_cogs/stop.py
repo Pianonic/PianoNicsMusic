@@ -26,7 +26,7 @@ class Stop(commands.Cog):
 
         if current_guild:
             current_guild.loop_queue = False
-            current_guild.queue_object_list = []
+            current_guild.queue = []
             current_guild.voice_client.stop()
         
         if ctx.message:
