@@ -54,13 +54,17 @@ async def on_ready():
     print(f"Bot is ready and logged in as {bot.user.name}")
     #await user.send(f"Bot is ready and logged in as {bot.user.name}")
 
-async def get_guild_music_information(guild_id: int) -> GuildMusicInformation | None:
+async def get_guild_object(guild_id: int) -> GuildMusicInformation | None:
     global guilds_info
 
     for guild in guilds_info:
         if guild.id == guild_id:
             return guild
     return None
+
+async def delete_queue(guild_id):
+    guild = await get_guild_object(guild_id)
+    guild.queue.clear()
 
 async def delete_guild(guild_id):
     global guilds_info
@@ -79,19 +83,24 @@ async def create_new_guild_music_information_and_join(guild_id: int, voice_chann
     guilds_info.append(new_guild)
     return new_guild
 
-async def add_to_queue_and_send_information(guild_id, ctx, queue_object_list: List[QueueObject]):
-    guild_music_info = await get_guild_music_information(guild_id)
+async def add_to_queue_and_send_information(guild_id: int, ctx: discord.commands.context.ApplicationContext, queue_object_list: List[QueueObject]):
+    guild_music_info = await get_guild_object(guild_id)
 
-    if queue_object_list.count > 1:
+    queue_length = len(queue_object_list)
+
+    if queue_length > 1:
         for queue_object in queue_object_list:
             guild_music_info.queue.append(queue_object)
 
         if ctx.message:
-            await ctx.send(embed=embed_generator.create_embed("📋 Queue 📋", f"Added **{queue_object_list.count}** Songs to the Queue"))
+            await ctx.send(embed=await embed_generator.create_embed("📋 Queue 📋", f"Added **{queue_length}** Songs to the Queue"))
         else:
-            await ctx.respond(embed=embed_generator.create_embed("📋 Queue 📋", f"Added **{queue_object_list.count}** Songs to the Queue"))
-        
-    elif queue_object_list.count is 1:
+            await ctx.respond(embed=await embed_generator.create_embed("📋 Queue 📋", f"Added **{queue_length}** Songs to the Queue"))
+
+    elif len(guild_music_info.queue) == 0:
+        guild_music_info.queue.append(queue_object_list[0])
+
+    elif queue_length == 1:
         guild_music_info.queue.append(queue_object_list[0])
 
         if ctx.message:
@@ -103,57 +112,86 @@ async def add_to_queue_and_send_information(guild_id, ctx, queue_object_list: Li
 
 @bot.command(aliases=['next', 'advance', 'skip_song', 'move_on', 'play_next'])
 async def skip(ctx):
-    guild = await get_guild_music_information(ctx.guild.id)
+    guild = await get_guild_object(ctx.guild.id)
 
     if guild:
         guild.voice_client.stop()
     
-    if ctx.message:
-        await ctx.message.add_reaction("⏭️")
+        if ctx.message:
+            await ctx.message.add_reaction("⏭️")
+        else:
+            await ctx.respond("Skipped Song ⏭️")
     else:
-        await ctx.respond("Skipped Song ⏭️")
+        if ctx.message:
+            await ctx.send("❗ Bot is not connected to a Voice channel")
+        else:
+            await ctx.respond("❗ Bot is not connected to a Voice channel")
 
 @bot.command(aliases=['exit', 'quit', 'bye', 'farewell', 'goodbye', 'leave_now', 'disconnect', 'stop_playing'])
 async def leave(ctx):
-    guild = await get_guild_music_information(ctx.guild.id)
+    guild = await get_guild_object(ctx.guild.id)
 
     if guild:
+        await delete_queue(ctx.guild.id)
         guild.voice_client.stop()
-        await delete_guild(guild.id)
     
-    if ctx.message:
-        await ctx.message.add_reaction("👋")
+        if ctx.message:
+            await ctx.message.add_reaction("👋")
+        else:
+            await ctx.respond("Left the channel 👋")
     else:
-        await ctx.respond("Left the channel 👋")
-
+        if ctx.message:
+            await ctx.send("❗ Bot is not connected to a Voice channel")
+        else:
+            await ctx.respond("❗ Bot is not connected to a Voice channel")
+    
 @bot.command(aliases=['hold', 'freeze', 'break', 'wait', 'intermission'])
 async def pause(ctx):
-    guild = await get_guild_music_information(ctx.guild.id)
+    guild = await get_guild_object(ctx.guild.id)
         
     if guild:
         guild.voice_client.pause()
     
-    if ctx.message:
-        await ctx.message.add_reaction("⏸️")
+        if ctx.message:
+            await ctx.message.add_reaction("⏸️")
+        else:
+            await ctx.respond("Paued the music ⏸️")
+
     else:
-        await ctx.respond("Paued the music ⏸️")
+        if ctx.message:
+            await ctx.send("❗ Bot is not connected to a Voice channel")
+        else:
+            await ctx.respond("❗ Bot is not connected to a Voice channel")
 
 @bot.command(aliases=['continue', 'unpause', 'proceed', 'restart', 'go', 'resume_playback'])
 async def resume(ctx):
-    guild = await get_guild_music_information(ctx.guild.id)
+    guild = await get_guild_object(ctx.guild.id)
 
     if guild:
         guild.voice_client.resume()
     
-    if ctx.message:
-        await ctx.message.add_reaction("▶️")
+        if ctx.message:
+            await ctx.message.add_reaction("▶️")
+        else:
+            await ctx.respond("Resumed the music ▶️")
+
     else:
-        await ctx.respond("Resumed the music ▶️")
+        if ctx.message:
+            await ctx.send("❗ Bot is not connected to a Voice channel")
+        else:
+            await ctx.respond("❗ Bot is not connected to a Voice channel")
 
 @bot.command(aliases=['lp', 'repeat', 'cycle', 'toggle_loop', 'toggle_repeat'])
 async def loop(ctx):
-    guild = await get_guild_music_information(ctx.guild.id)
+    guild = await get_guild_object(ctx.guild.id)
 
+    if not guild:
+        if ctx.message:
+            await ctx.send("❗ Bot is not connected to a Voice channel")
+        else:
+            await ctx.respond("❗ Bot is not connected to a Voice channel")
+        return
+    
     if guild.loop_queue:
         if ctx.message:
             await ctx.message.add_reaction("🔄")
@@ -167,7 +205,14 @@ async def loop(ctx):
 
 @bot.command(aliases=['fp', 'forceplay', 'playforce'])
 async def force_play(ctx, *, query=None):
-    guild = await get_guild_music_information(ctx.guild.id)
+    guild = await get_guild_object(ctx.guild.id)
+
+    if not guild:
+        if ctx.message:
+            await ctx.send("❗ Bot is not connected to a Voice channel")
+        else:
+            await ctx.respond("❗ Bot is not connected to a Voice channel")
+        return
 
     if guild.queue and guild.voice_client:
         guild.queue.insert(0, query)
@@ -182,7 +227,15 @@ async def force_play(ctx, *, query=None):
 
 @bot.command()
 async def shuffle(ctx):
-    guild = await get_guild_music_information(ctx.guild.id)
+    guild = await get_guild_object(ctx.guild.id)
+
+    if not guild:
+        if ctx.message:
+            await ctx.send("❗ Bot is not connected to a Voice channel")
+        else:
+            await ctx.respond("❗ Bot is not connected to a Voice channel")
+        return
+
     random.shuffle(guild.queue)
 
     if ctx.message:
@@ -229,112 +282,52 @@ async def help(ctx):
     else:
         await ctx.respond(embed=embed)
 
-async def play(voice_client: discord.voice_client, queue_url: str, guild_id: int):
-        
+async def play(loading_message: discord.message.Message | discord.interactions.Interaction, queue_url: str, guild_id: int):
+    guild = await get_guild_object(guild_id)
+
+    music_information = await music_url_getter.get_streaming_url(queue_url)
+
+    await loading_message.edit(embed=await embed_generator.create_embed("💿 Now Playing 💿", f"**{music_information.song_name}** By **{music_information.author}**", music_information.image_url ))
+    
     # Create an audio source and player
-    audio_source = discord.FFmpegPCMAudio(toPlay.data.link, options='-vn', before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5")
+    audio_source = discord.FFmpegPCMAudio(music_information.streaming_url, options='-vn', before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5")
     player = discord.PCMVolumeTransformer(audio_source)
 
-    # Play the audio
     guild.voice_client.play(player)
-    try:
-        await toPlay.message.edit(embed=embed_generator.create_embed("💿 Now Playing 💿", f"**{toPlay.data.song_name}** By **{toPlay.data.author}**", toPlay.data.image ))
-    except:
-        print("Error editing message")
-        
+
     while guild.voice_client.is_playing() or guild.voice_client.is_paused():
-        await asyncio.sleep(1)
-
-    if not next((guild for guild in guilds_info if guild.id == guild_id), None):   
-        break     
-    
-    if(guild.loop_queue):
-        guild.queue.append(query)
-
-    await guild.voice_client.disconnect()
-    guild.bot_status = Status.IDLE
-    guild.voice_client = None
-    await delete_guild(ctx.guild.id)
-
-async def playerer(ctx, guild_id: int):
-    global guilds_info
-    guild = await get_guild_music_information(guild_id)
-
-    while guild.queue:
-        guild.is_bot_busy = True
-
-        query = guild.queue.pop(0)
-
-        try:
-            songList = audio_content_type_finder.get_audio_content_type(query)
-
-            if (len(songList) != 1):
-                await ctx.send(embed=embed_generator.create_embed("📋 Adding Items to Queue 📋", f"Added **{len(songList)}** Songs"))
-                for song in songList:
-                    guild.queue.append(song)
-                continue
-        except Exception as e:
-            await ctx.send("`An error occurred: {}`".format(e))
-            continue
-
-        try:
-            toPlay = await music_platform_finder.find_platform(ctx, query)
-        except Exception as e:
-            await ctx.send("`An error occurred: {}`".format(e))
-            continue
-
-        if not toPlay:
-            continue
-        
-        # Create an audio source and player
-        audio_source = discord.FFmpegPCMAudio(toPlay.data.link, options='-vn', before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5")
-        player = discord.PCMVolumeTransformer(audio_source)
-
-        # Play the audio
-        guild.voice_client.play(player)
-        try:
-            await toPlay.message.edit(embed=embed_generator.create_embed("💿 Now Playing 💿", f"**{toPlay.data.song_name}** By **{toPlay.data.author}**", toPlay.data.image ))
-        except:
-            print("Error editing message")
-            
-        while guild.voice_client.is_playing() or guild.voice_client.is_paused():
-            await asyncio.sleep(1)
-
-        if not next((guild for guild in guilds_info if guild.id == guild_id), None):   
-            break     
-        
-        if(guild.loop_queue):
-            guild.queue.append(query)
-
-    await guild.voice_client.disconnect()
-    guild.bot_status = Status.IDLE
-    guild.voice_client = None
-    await delete_guild(ctx.guild.id)
+        await asyncio.sleep(1) 
 
 @bot.command(name='play', aliases=['p', 'pl', 'play_song', 'queue', 'add', 'enqueue'])
 async def play_command(ctx, *, query=None):
-    guild = await get_guild_music_information(ctx.guild.id) or await create_new_guild_music_information_and_join(ctx.guild.id, ctx.author.voice.channel)
+    guild = await get_guild_object(ctx.guild.id) or await create_new_guild_music_information_and_join(ctx.guild.id, ctx.author.voice.channel)
     
     requested_queue_object_list = await music_url_getter.get_urls(query)
 
     await add_to_queue_and_send_information(guild.id, ctx, requested_queue_object_list)
 
     if not guild.is_bot_busy:
-        guild_music_info = await get_guild_music_information(guild.id)
-        queue_object_list = guild_music_info.queue
-        
-        while queue_object_list.count != 0:
-            queue_entry = next((a for a in queue_object_list if not a.already_played), None)
+        guild.is_bot_busy = True
 
-            if queue_entry is not None:
+        while True:
+            queue_entry = next((entry for entry in guild.queue if not entry.already_played), None)
+
+            if queue_entry:
                 queue_entry.already_played = True
+            else:
+                break
 
-            if guild_music_info.is_bot_busy is not None:
-                guild_music_info.is_bot_busy = True
+            loading_message = None
+            try:
+                loading_message = await ctx.respond(embed=await embed_generator.create_embed("⏳ Please Wait ⏳", "Searching song... ⌚"))
+            except:
+                loading_message = await ctx.send(embed=await embed_generator.create_embed("⏳ Please Wait ⏳", "Searching song... ⌚"))
 
-            await play(guild_music_info.voice_client, queue_entry.url, guild.id)
-        
-        
+            await play(loading_message, queue_entry.url, guild.id)    
+
+        if guild.voice_client:
+            await guild.voice_client.disconnect()
+            await delete_guild(guild.id)
 
 ###################################################
 ################# SLASH COMMANDS ##################
@@ -434,7 +427,7 @@ if isServerRunning:
             message = await websocket.recv()
             data = json.loads(message)
 
-            dc_message = await ctx.respond(embed=embed_generator.create_embed("🗣️ AI Singer 🗣️", data["message"]))
+            dc_message = await ctx.respond(embed=await embed_generator.create_embed("🗣️ AI Singer 🗣️", data["message"]))
 
             # Listen for updates from the server
             while True:
@@ -443,18 +436,18 @@ if isServerRunning:
                 #print(data)
                 if "message" in data:
                     # Send a new message with the update
-                    await dc_message.edit(embed=embed_generator.create_embed("🗣️ AI Singer 🗣️", data["message"]))
+                    await dc_message.edit(embed=await embed_generator.create_embed("🗣️ AI Singer 🗣️", data["message"]))
                 elif "file" in data:
                     file_data = base64.b64decode(data["file"])
                     file_like_object = io.BytesIO(file_data)
-                    edited_message = await dc_message.edit(embed=embed_generator.create_embed("🗣️ AI Singer 🗣️", "Finished"), file=discord.File(file_like_object, filename="unknown.mp3"))
+                    edited_message = await dc_message.edit(embed=await embed_generator.create_embed("🗣️ AI Singer 🗣️", "Finished"), file=discord.File(file_like_object, filename="unknown.mp3"))
                     file_url = edited_message.attachments[0].url
 
                     await play_command(ctx, query=file_url)
                 elif "error" in data:
                     await dc_message.edit(f"Error from server: {data['error']}")
                 elif "queue_position" in data:
-                    await dc_message.edit(embed=embed_generator.create_embed("🗣️ AI Singer 🗣️", f"Your request is at position {data['queue_position']} in the queue."))
+                    await dc_message.edit(embed=await embed_generator.create_embed("🗣️ AI Singer 🗣️", f"Your request is at position {data['queue_position']} in the queue."))
                 elif "status" in data:
                     print("made it out")
                     break

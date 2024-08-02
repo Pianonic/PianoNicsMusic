@@ -1,11 +1,6 @@
 import discord
 
-class QueueObj:
-  def __init__(self, author, link):
-    self.author = author
-    self.link = link
-
-def create_embed(title, contents, image=None):
+async def create_embed(title, contents, image=None):
     if all(isinstance(item, str) for item in contents):
         embed=discord.Embed(title=title, color=0x282841)
         if(image):

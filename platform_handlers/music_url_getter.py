@@ -1,6 +1,14 @@
 from typing import List
 from urllib.parse import urlparse
+
+from bs4 import BeautifulSoup
+import requests
+import ddl_retrievers.spotify_ddl_retriever
+import ddl_retrievers.tiktok_ddl_retriever
+import ddl_retrievers.universal_ddl_retrieve
+from models.music_information import MusicInformation
 from models.queue_object import QueueObject
+import ddl_retrievers
 from platform_handlers.audio_content_type_finder import get_audio_content_type
 from platform_handlers.music_platform_finder import find_platform
 from enums.audio_content_type import AudioContentType
@@ -12,10 +20,48 @@ from spotipy import SpotifyClientCredentials
 import spotipy
 import os
 
-async def get_streaming_url(query_url: str):
+async def get_streaming_url(query_url: str) -> MusicInformation:
     platform = await find_platform(query_url)
-    audio_content_type = get_audio_content_type(query_url, platform)
-    return "a" 
+
+    if platform is Platform.SPOTIFY:
+        return await ddl_retrievers.spotify_ddl_retriever.get_streaming_url(query_url)
+
+    elif platform is Platform.TIK_TOK:
+        return await ddl_retrievers.tiktok_ddl_retriever.get_streaming_url(query_url)
+
+    elif platform is Platform.SOUND_CLOUD:
+        parsed_url = urlparse(query_url)
+
+        subdomain = parsed_url.hostname.split('.')[0]
+
+        if "api" in subdomain:
+            response = requests.get(f"https://w.soundcloud.com/player/?url={query_url}")
+            html_content = response.text
+
+            soup = BeautifulSoup(html_content, 'html.parser')
+
+            canonical_link = soup.find('link', rel='canonical')
+            href = canonical_link.get('href')
+
+            return await ddl_retrievers.universal_ddl_retrieve.get_streaming_url(href)
+        
+        else:
+            return await ddl_retrievers.universal_ddl_retrieve.get_streaming_url(query_url)
+
+
+    elif platform is Platform.ANYTHING_ELSE:
+        audio_content_type = await get_audio_content_type(query_url, platform)
+
+        if audio_content_type is AudioContentType.YT_DLP:
+            return await ddl_retrievers.universal_ddl_retrieve.get_streaming_url(query_url)
+        else:
+            parsed_url = urlparse(query_url)
+            song_name = os.path.basename(parsed_url.path)
+            
+            return MusicInformation(query_url, song_name, "unkown", 'https://i.giphy.com/LNOZoHMI16ydtQ8bGG.webp')
+        
+    else:
+        return await ddl_retrievers.universal_ddl_retrieve.universal.get_streaming_url(query_url)
 
 async def get_urls(query: str) -> List[QueueObject]:
     platform = await find_platform(query)
@@ -24,6 +70,10 @@ async def get_urls(query: str) -> List[QueueObject]:
     if audio_content_type is AudioContentType.NOT_SUPPORTED:
         return [QueueObject()]
     
+    # TikTok
+    elif audio_content_type is Platform.TIK_TOK:
+        return [QueueObject(query, False)]
+
     elif audio_content_type is AudioContentType.QUERY:
         yt = ytmusicapi.YTMusic()
         video_id = yt.search(query)[0]["videoId"]
@@ -33,6 +83,7 @@ async def get_urls(query: str) -> List[QueueObject]:
     elif audio_content_type is AudioContentType.SINGLE_SONG:
         return [QueueObject(query, False)]
     
+    # Spotify
     elif (audio_content_type is AudioContentType.PLAYLIST or audio_content_type is AudioContentType.ALBUM) and platform is Platform.SPOTIFY:
         client_credentials_manager = SpotifyClientCredentials(client_id=os.getenv('SPOTIFY_CLIENT_ID'), client_secret=os.getenv('SPOTIFY_CLIENT_SECRET'))
         sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
@@ -48,7 +99,6 @@ async def get_urls(query: str) -> List[QueueObject]:
             playlist_or_album = sp.playlist(playlist_or_album_id)
             track_links = [QueueObject(item['track']['external_urls']['spotify'], False) for item in playlist_or_album['tracks']['items']]
 
-
         elif audio_content_type is AudioContentType.ALBUM:
             playlist_or_album = sp.album(playlist_or_album_id)
             track_links = [QueueObject(item['external_urls']['spotify'], False) for item in playlist_or_album['tracks']['items']]
@@ -58,11 +108,10 @@ async def get_urls(query: str) -> List[QueueObject]:
 
         return track_links
 
-
+    # Soundcloud and Youtube
     elif (audio_content_type is AudioContentType.PLAYLIST or audio_content_type is AudioContentType.RADIO) and platform != Platform.SPOTIFY:
         ydl_opts = {
-            'extract_flat': 'in_playlist',
-            'dump_single_json': True,
+            'extract_flat': True,
             'quiet': True,
             'skip_download': True,
         }
@@ -71,7 +120,25 @@ async def get_urls(query: str) -> List[QueueObject]:
             playlist_info = ydl.extract_info(query)
             queue_object_list = [QueueObject(entry['url'], False) for entry in playlist_info['entries']]
             return queue_object_list
-        
+
+    # Anything else
+    elif audio_content_type is AudioContentType.YT_DLP:
+        ydl_opts = {
+            'extract_flat': True,
+            'quiet': True,
+            'skip_download': True,
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            playlist_info = ydl.extract_info(query)
+            entries = playlist_info.get("entries", None)
+
+            if entries:
+                queue_object_list = [QueueObject(entry['url'], False) for entry in entries]
+                return queue_object_list
+            else:
+                return [QueueObject(query, False)]    
+
     else:
         print("skipped")
             

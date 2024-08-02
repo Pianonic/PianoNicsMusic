@@ -7,4 +7,5 @@ class AudioContentType(Enum):
     PLAYLIST = 4
     RADIO = 5
     ALBUM = 6
+    YT_DLP = 7
     
