@@ -1,3 +1,10 @@
-import sqlite3
+from sqlalchemy import create_engine, MetaData
 
-conn = sqlite3.connect(':memory:')
+# Create an in-memory SQLite database
+engine = create_engine('sqlite:///:memory:', echo=True)
+
+# Create a metadata object
+meta = MetaData()
+
+# Create all tables in the database
+meta.create_all(engine)
