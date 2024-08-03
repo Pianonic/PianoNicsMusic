@@ -52,6 +52,7 @@ async def on_ready():
         await msg.delete()
 
     print(f"Bot is ready and logged in as {bot.user.name}")
+
     #await user.send(f"Bot is ready and logged in as {bot.user.name}")
 
 async def get_guild_object(guild_id: int) -> GuildMusicInformation | None:
@@ -126,6 +127,14 @@ async def skip(ctx):
             await ctx.send("❗ Bot is not connected to a Voice channel")
         else:
             await ctx.respond("❗ Bot is not connected to a Voice channel")
+
+@bot.command()
+async def test(ctx):
+    voice_client = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    if voice_client and voice_client.is_connected():
+        await ctx.send("I am connected to a voice channel.")
+    else:
+        await ctx.send("I am not connected to any voice channel.")
 
 @bot.command(aliases=['exit', 'quit', 'bye', 'farewell', 'goodbye', 'leave_now', 'disconnect', 'stop_playing'])
 async def leave(ctx):

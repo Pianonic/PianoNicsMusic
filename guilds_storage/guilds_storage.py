@@ -1,4 +1,0 @@
-
-
-guilds_info = []
-
