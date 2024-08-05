@@ -5,8 +5,7 @@ import io
 import json
 import os
 import random
-from enum import Enum
-from typing import List, Optional
+from typing import List
 
 # Third-party imports
 import discord
@@ -18,11 +17,8 @@ from dotenv import load_dotenv
 # Local application imports
 from discord_utils import embed_generator
 from models.queue_object import QueueObject
-from platform_handlers import audio_content_type_finder
-from platform_handlers import music_platform_finder
-from server_requests import rvc_server_pinger
-from enums.status import Status
-from models.guild_music_information import GuildMusicInformation
+from ai_server_utils import rvc_server_checker
+from models.guild_music_information import GuildMusicInformation, GuildMusicInformationDto
 from platform_handlers import music_url_getter
 load_dotenv()
 
@@ -32,7 +28,7 @@ model_choices = []
 #isServerRunning = rvc_server_pinger.check_connection()
 isServerRunning = False
 if(isServerRunning):
-    model_choices, index_choices = rvc_server_pinger.fetch_choices()
+    model_choices, index_choices = rvc_server_checker.fetch_choices()
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -55,7 +51,7 @@ async def on_ready():
 
     #await user.send(f"Bot is ready and logged in as {bot.user.name}")
 
-async def get_guild_object(guild_id: int) -> GuildMusicInformation | None:
+async def get_guild_object(guild_id: int) -> GuildMusicInformationDto | None:
     global guilds_info
 
     for guild in guilds_info:
@@ -63,11 +59,11 @@ async def get_guild_object(guild_id: int) -> GuildMusicInformation | None:
             return guild
     return None
 
-async def delete_queue(guild_id):
+async def delete_queue(guild_id: int):
     guild = await get_guild_object(guild_id)
     guild.queue.clear()
 
-async def delete_guild(guild_id):
+async def delete_guild(guild_id: int):
     global guilds_info
 
     for index, guild in enumerate(guilds_info):
@@ -80,7 +76,7 @@ async def create_new_guild_music_information_and_join(guild_id: int, voice_chann
 
     voice_client = await voice_channel.connect()
 
-    new_guild = GuildMusicInformation(id=guild_id, voice_channel=voice_channel, voice_client=voice_client, is_bot_busy=False, queue=[], loop_queue=False)
+    new_guild = GuildMusicInformation(guild_id=guild_id, voice_channel=voice_channel, voice_client=voice_client, is_bot_busy=False, queue=[], loop_queue=False)
     guilds_info.append(new_guild)
     return new_guild
 
@@ -313,7 +309,7 @@ async def play_command(ctx, *, query=None):
     
     requested_queue_object_list = await music_url_getter.get_urls(query)
 
-    await add_to_queue_and_send_information(guild.id, ctx, requested_queue_object_list)
+    await add_to_queue_and_send_information(guild.guild_id, ctx, requested_queue_object_list)
 
     if not guild.is_bot_busy:
         guild.is_bot_busy = True
@@ -332,11 +328,11 @@ async def play_command(ctx, *, query=None):
             except:
                 loading_message = await ctx.send(embed=await embed_generator.create_embed("⏳ Please Wait ⏳", "Searching song... ⌚"))
 
-            await play(loading_message, queue_entry.url, guild.id)    
+            await play(loading_message, queue_entry.url, guild.guild_id)    
 
         if guild.voice_client:
             await guild.voice_client.disconnect()
-            await delete_guild(guild.id)
+            await delete_guild(guild.guild_id)
 
 ###################################################
 ################# SLASH COMMANDS ##################
