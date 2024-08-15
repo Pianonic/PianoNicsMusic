@@ -1,7 +1,10 @@
 import os
+from dotenv import load_dotenv
 from spotdl import Spotdl
 import yt_dlp as youtube_dl
 from models.music_information import MusicInformation
+
+load_dotenv()
 
 spotdl = Spotdl(client_id=os.getenv('SPOTIFY_CLIENT_ID'), client_secret=os.getenv('SPOTIFY_CLIENT_SECRET'))
 

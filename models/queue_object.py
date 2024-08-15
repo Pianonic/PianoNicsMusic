@@ -1,25 +1,23 @@
 from dataclasses import dataclass
-from sqlalchemy import Integer, String, Boolean, ForeignKey
-from sqlalchemy.orm import declarative_base, Mapped, mapped_column
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from db_utils.base import Base
 
-Base = declarative_base()
+class QueueEntry(Base):
+  __tablename__ = 'queue_entry'
 
-class QueueObject(Base):
-    __tablename__ = 'queue_objects'
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    url: Mapped[str] = mapped_column(String, nullable=False)
-    already_played: Mapped[bool] = mapped_column(Boolean, default=False)
-    guild_music_info_id: Mapped[int] = mapped_column(Integer, ForeignKey('guild_music_information.id'))
+  id = Column(Integer, primary_key=True, autoincrement=True)
+  guild_id = Column(Integer, ForeignKey("guilds.id"), nullable=False)
+  url = Column(String, nullable=False)
+  already_played = Column(Boolean, nullable=False)
+  force_play = Column(Boolean, nullable=False)
 
 @dataclass
-class QueueObjectDto:
+class QueueEntryDto:
   url: str
   already_played: bool
 
-def map(queue_object: QueueObject) -> QueueObjectDto:
-    """Convert QueueObject to QueueObjectDto."""
-    return QueueObjectDto(
-        url=queue_object.url,
-        already_played=queue_object.already_played
-    )
+def map(queue_entry: QueueEntry) -> QueueEntryDto:
+  return QueueEntryDto(
+    url=queue_entry.url,
+    already_played=queue_entry.already_played
+  )

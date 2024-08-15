@@ -15,14 +15,15 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 # Local application imports
+from db_utils.db import setup_db
+import db_utils.db_utils as db_utils
 from discord_utils import embed_generator
-from models.queue_object import QueueObject
+from models.queue_object import QueueEntry
 from ai_server_utils import rvc_server_checker
-from models.guild_music_information import GuildMusicInformation, GuildMusicInformationDto
+from models.guild_music_information import Guild, GuildDto
 from platform_handlers import music_url_getter
 load_dotenv()
 
-guilds_info = []
 model_choices = []
 
 #isServerRunning = rvc_server_pinger.check_connection()
@@ -47,72 +48,18 @@ async def on_ready():
     for msg in messages:
         await msg.delete()
 
+    await setup_db()
+
     print(f"Bot is ready and logged in as {bot.user.name}")
 
     #await user.send(f"Bot is ready and logged in as {bot.user.name}")
 
-async def get_guild_object(guild_id: int) -> GuildMusicInformationDto | None:
-    global guilds_info
-
-    for guild in guilds_info:
-        if guild.id == guild_id:
-            return guild
-    return None
-
-async def delete_queue(guild_id: int):
-    guild = await get_guild_object(guild_id)
-    guild.queue.clear()
-
-async def delete_guild(guild_id: int):
-    global guilds_info
-
-    for index, guild in enumerate(guilds_info):
-        if guild.id == guild_id:
-            guilds_info.pop(index)
-            break
-        
-async def create_new_guild_music_information_and_join(guild_id: int, voice_channel: discord.VoiceChannel) -> GuildMusicInformation:
-    global guilds_info
-
-    voice_client = await voice_channel.connect()
-
-    new_guild = GuildMusicInformation(guild_id=guild_id, voice_channel=voice_channel, voice_client=voice_client, is_bot_busy=False, queue=[], loop_queue=False)
-    guilds_info.append(new_guild)
-    return new_guild
-
-async def add_to_queue_and_send_information(guild_id: int, ctx: discord.commands.context.ApplicationContext, queue_object_list: List[QueueObject]):
-    guild_music_info = await get_guild_object(guild_id)
-
-    queue_length = len(queue_object_list)
-
-    if queue_length > 1:
-        for queue_object in queue_object_list:
-            guild_music_info.queue.append(queue_object)
-
-        if ctx.message:
-            await ctx.send(embed=await embed_generator.create_embed("📋 Queue 📋", f"Added **{queue_length}** Songs to the Queue"))
-        else:
-            await ctx.respond(embed=await embed_generator.create_embed("📋 Queue 📋", f"Added **{queue_length}** Songs to the Queue"))
-
-    elif len(guild_music_info.queue) == 0:
-        guild_music_info.queue.append(queue_object_list[0])
-
-    elif queue_length == 1:
-        guild_music_info.queue.append(queue_object_list[0])
-
-        if ctx.message:
-            await ctx.message.add_reaction("📥")
-        else:
-            await ctx.respond("Added to the queue 📥")
-    else:
-        print("error")
-
 @bot.command(aliases=['next', 'advance', 'skip_song', 'move_on', 'play_next'])
 async def skip(ctx):
-    guild = await get_guild_object(ctx.guild.id)
+    voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
 
-    if guild:
-        guild.voice_client.stop()
+    if voice_client:
+        voice_client.stop()
     
         if ctx.message:
             await ctx.message.add_reaction("⏭️")
@@ -124,21 +71,60 @@ async def skip(ctx):
         else:
             await ctx.respond("❗ Bot is not connected to a Voice channel")
 
-@bot.command()
-async def test(ctx):
-    voice_client = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    if voice_client and voice_client.is_connected():
-        await ctx.send("I am connected to a voice channel.")
-    else:
-        await ctx.send("I am not connected to any voice channel.")
+# @bot.command()
+# async def createNewGuild(ctx):
+#     await db_utils.create_new_guild(ctx.guild.id)
+#     await ctx.send("Sucess")
+
+# @bot.command()
+# async def getGuild(ctx):
+#     guild_dto = await db_utils.get_guild(ctx.guild.id)
+#     if guild_dto:
+#         await ctx.send(f"Guild DTO: {guild_dto}")
+#     else:
+#         await ctx.send("Guild not found.")
+
+# @bot.command()
+# async def deleteQueue(ctx):
+#     await db_utils.delete_queue(ctx.guild.id)
+#     await ctx.send("Sucess")
+
+# @bot.command()
+# async def addToQueue(ctx, *urls: str):
+#     guild_id = ctx.guild.id
+
+#     await db_utils.add_to_queue(guild_id, urls)
+
+#     await ctx.send("Successfully added to the queue!")
+
+# @bot.command()
+# async def deleteGuild(ctx):
+#     await db_utils.delete_guild(ctx.guild.id)
+#     await ctx.send("Sucess")
+
+# @bot.command()
+# async def getEntry(ctx):
+#     a = await db_utils.get_queue_entry(ctx.guild.id)
+#     if a:
+#         await ctx.send(a)
+#     else:
+#         await ctx.send("None")
+
+# @bot.command()
+# async def tesyt(ctx):
+#     voice_client = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+#     if voice_client and voice_client.is_connected():
+#         await ctx.send("I am connected to a voice channel.")
+#     else:
+#         await ctx.send("I am not connected to any voice channel.")
 
 @bot.command(aliases=['exit', 'quit', 'bye', 'farewell', 'goodbye', 'leave_now', 'disconnect', 'stop_playing'])
 async def leave(ctx):
-    guild = await get_guild_object(ctx.guild.id)
+    voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
 
-    if guild:
-        await delete_queue(ctx.guild.id)
-        guild.voice_client.stop()
+    if voice_client:
+        await db_utils.delete_queue(ctx.guild.id)
+        voice_client.stop()
     
         if ctx.message:
             await ctx.message.add_reaction("👋")
@@ -152,10 +138,10 @@ async def leave(ctx):
     
 @bot.command(aliases=['hold', 'freeze', 'break', 'wait', 'intermission'])
 async def pause(ctx):
-    guild = await get_guild_object(ctx.guild.id)
+    voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         
-    if guild:
-        guild.voice_client.pause()
+    if voice_client:
+        voice_client.pause()
     
         if ctx.message:
             await ctx.message.add_reaction("⏸️")
@@ -170,10 +156,10 @@ async def pause(ctx):
 
 @bot.command(aliases=['continue', 'unpause', 'proceed', 'restart', 'go', 'resume_playback'])
 async def resume(ctx):
-    guild = await get_guild_object(ctx.guild.id)
+    voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
 
-    if guild:
-        guild.voice_client.resume()
+    if voice_client:
+        voice_client.resume()
     
         if ctx.message:
             await ctx.message.add_reaction("▶️")
@@ -188,7 +174,7 @@ async def resume(ctx):
 
 @bot.command(aliases=['lp', 'repeat', 'cycle', 'toggle_loop', 'toggle_repeat'])
 async def loop(ctx):
-    guild = await get_guild_object(ctx.guild.id)
+    guild = await db_utils.get_guild(ctx.guild.id)
 
     if not guild:
         if ctx.message:
@@ -210,7 +196,8 @@ async def loop(ctx):
 
 @bot.command(aliases=['fp', 'forceplay', 'playforce'])
 async def force_play(ctx, *, query=None):
-    guild = await get_guild_object(ctx.guild.id)
+    guild = await db_utils.get_guild(ctx.guild.id)
+    voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
 
     if not guild:
         if ctx.message:
@@ -219,9 +206,8 @@ async def force_play(ctx, *, query=None):
             await ctx.respond("❗ Bot is not connected to a Voice channel")
         return
 
-    if guild.queue and guild.voice_client:
-        guild.queue.insert(0, query)
-        guild.voice_client.stop()  
+    if (len(guild.queue) != 0) and voice_client:
+        await db_utils.add_force_next_play_to_queue(query)
     else:
         await ctx.send("No song is currently playing")
     
@@ -232,7 +218,7 @@ async def force_play(ctx, *, query=None):
 
 @bot.command()
 async def shuffle(ctx):
-    guild = await get_guild_object(ctx.guild.id)
+    guild = await db_utils.get_guild(ctx.guild.id)
 
     if not guild:
         if ctx.message:
@@ -241,7 +227,7 @@ async def shuffle(ctx):
             await ctx.respond("❗ Bot is not connected to a Voice channel")
         return
 
-    random.shuffle(guild.queue)
+    await db_utils.shuffle_playlist(ctx.guild.id)
 
     if ctx.message:
         await ctx.message.add_reaction("🔀")
@@ -288,7 +274,7 @@ async def help(ctx):
         await ctx.respond(embed=embed)
 
 async def play(loading_message: discord.message.Message | discord.interactions.Interaction, queue_url: str, guild_id: int):
-    guild = await get_guild_object(guild_id)
+    voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=bot.get_guild(guild_id))
 
     music_information = await music_url_getter.get_streaming_url(queue_url)
 
@@ -298,41 +284,52 @@ async def play(loading_message: discord.message.Message | discord.interactions.I
     audio_source = discord.FFmpegPCMAudio(music_information.streaming_url, options='-vn', before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5")
     player = discord.PCMVolumeTransformer(audio_source)
 
-    guild.voice_client.play(player)
+    voice_client.play(player)
 
-    while guild.voice_client.is_playing() or guild.voice_client.is_paused():
+    while voice_client.is_playing() or voice_client.is_paused():
         await asyncio.sleep(1) 
 
 @bot.command(name='play', aliases=['p', 'pl', 'play_song', 'queue', 'add', 'enqueue'])
 async def play_command(ctx, *, query=None):
-    guild = await get_guild_object(ctx.guild.id) or await create_new_guild_music_information_and_join(ctx.guild.id, ctx.author.voice.channel)
+    guild = await db_utils.get_guild(ctx.guild.id)
+
+    song_urls = await music_url_getter.get_urls(query)
+    await db_utils.add_to_queue(ctx.guild.id, song_urls)
     
-    requested_queue_object_list = await music_url_getter.get_urls(query)
+    if guild:
+        queue_length = len(song_urls)
 
-    await add_to_queue_and_send_information(guild.guild_id, ctx, requested_queue_object_list)
-
-    if not guild.is_bot_busy:
-        guild.is_bot_busy = True
-
-        while True:
-            queue_entry = next((entry for entry in guild.queue if not entry.already_played), None)
-
-            if queue_entry:
-                queue_entry.already_played = True
+        if queue_length > 1:
+            if ctx.message:
+                await ctx.send(embed=await embed_generator.create_embed("📋 Queue 📋", f"Added **{queue_length}** Songs to the Queue"))
             else:
-                break
+                await ctx.respond(embed=await embed_generator.create_embed("📋 Queue 📋", f"Added **{queue_length}** Songs to the Queue"))
 
-            loading_message = None
-            try:
-                loading_message = await ctx.respond(embed=await embed_generator.create_embed("⏳ Please Wait ⏳", "Searching song... ⌚"))
-            except:
-                loading_message = await ctx.send(embed=await embed_generator.create_embed("⏳ Please Wait ⏳", "Searching song... ⌚"))
+        else:
+            if ctx.message:
+                await ctx.message.add_reaction("📥")
+            else:
+                await ctx.respond("Added to the queue 📥")
+        
+        return
+    else:
+        await db_utils.create_new_guild(ctx.guild.id)
+        await ctx.author.voice.channel.connect()
+    
+    while True:
+        url = await db_utils.get_queue_entry(ctx.guild.id)
 
-            await play(loading_message, queue_entry.url, guild.guild_id)    
+        if not url:
+            break
 
-        if guild.voice_client:
-            await guild.voice_client.disconnect()
-            await delete_guild(guild.guild_id)
+        try:
+            loading_message = await ctx.respond(embed=await embed_generator.create_embed("⏳ Please Wait ⏳", "Searching song... ⌚"))
+        except:
+            loading_message = await ctx.send(embed=await embed_generator.create_embed("⏳ Please Wait ⏳", "Searching song... ⌚"))
+
+        await play(loading_message, url, ctx.guild.id)    
+
+    await db_utils.delete_guild(ctx.guild.id)
 
 ###################################################
 ################# SLASH COMMANDS ##################

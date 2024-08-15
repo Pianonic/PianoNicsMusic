@@ -7,7 +7,7 @@ import ddl_retrievers.spotify_ddl_retriever
 import ddl_retrievers.tiktok_ddl_retriever
 import ddl_retrievers.universal_ddl_retrieve
 from models.music_information import MusicInformation
-from models.queue_object import QueueObject
+from models.queue_object import QueueEntryDto
 import ddl_retrievers
 from platform_handlers.audio_content_type_finder import get_audio_content_type
 from platform_handlers.music_platform_finder import find_platform
@@ -61,27 +61,27 @@ async def get_streaming_url(query_url: str) -> MusicInformation:
             return MusicInformation(query_url, song_name, "unkown", 'https://i.giphy.com/LNOZoHMI16ydtQ8bGG.webp')
         
     else:
-        return await ddl_retrievers.universal_ddl_retrieve.universal.get_streaming_url(query_url)
+        return await ddl_retrievers.universal_ddl_retrieve.get_streaming_url(query_url)
 
-async def get_urls(query: str) -> List[QueueObject]:
+async def get_urls(query: str) -> List[str]:
     platform = await find_platform(query)
     audio_content_type = await get_audio_content_type(query, platform)
 
     if audio_content_type is AudioContentType.NOT_SUPPORTED:
-        return [QueueObject()]
+        return []
     
     # TikTok
     elif audio_content_type is Platform.TIK_TOK:
-        return [QueueObject(query, False)]
+        return [query]
 
     elif audio_content_type is AudioContentType.QUERY:
         yt = ytmusicapi.YTMusic()
         video_id = yt.search(query)[0]["videoId"]
         yt_music_url = f"https://music.youtube.com/watch?v={video_id}"
-        return [QueueObject(yt_music_url, False)]
+        return [yt_music_url]
     
     elif audio_content_type is AudioContentType.SINGLE_SONG:
-        return [QueueObject(query, False)]
+        return [yt_music_url]
     
     # Spotify
     elif (audio_content_type is AudioContentType.PLAYLIST or audio_content_type is AudioContentType.ALBUM) and platform is Platform.SPOTIFY:
@@ -93,20 +93,16 @@ async def get_urls(query: str) -> List[QueueObject]:
         path_segments = path.strip("/").split("/")
         playlist_or_album_id = path_segments[-1]
 
-        track_links = List[QueueObject]
-
         if audio_content_type is AudioContentType.PLAYLIST:
             playlist_or_album = sp.playlist(playlist_or_album_id)
-            track_links = [QueueObject(item['track']['external_urls']['spotify'], False) for item in playlist_or_album['tracks']['items']]
+            return [item['track']['external_urls']['spotify'] for item in playlist_or_album['tracks']['items']]
 
         elif audio_content_type is AudioContentType.ALBUM:
             playlist_or_album = sp.album(playlist_or_album_id)
-            track_links = [QueueObject(item['external_urls']['spotify'], False) for item in playlist_or_album['tracks']['items']]
+            return [item['external_urls']['spotify'] for item in playlist_or_album['tracks']['items']]
 
         else:
             print("error")
-
-        return track_links
 
     # Soundcloud and Youtube
     elif (audio_content_type is AudioContentType.PLAYLIST or audio_content_type is AudioContentType.RADIO) and platform != Platform.SPOTIFY:
@@ -118,8 +114,7 @@ async def get_urls(query: str) -> List[QueueObject]:
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             playlist_info = ydl.extract_info(query)
-            queue_object_list = [QueueObject(entry['url'], False) for entry in playlist_info['entries']]
-            return queue_object_list
+            return [entry['url'] for entry in playlist_info['entries']]
 
     # Anything else
     elif audio_content_type is AudioContentType.YT_DLP:
@@ -134,11 +129,10 @@ async def get_urls(query: str) -> List[QueueObject]:
             entries = playlist_info.get("entries", None)
 
             if entries:
-                queue_object_list = [QueueObject(entry['url'], False) for entry in entries]
-                return queue_object_list
+                return [entry['url'] for entry in entries]
             else:
-                return [QueueObject(query, False)]    
+                return [query]    
 
     else:
-        print("skipped")
+        print("not Implemented error")
             

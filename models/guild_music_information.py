@@ -1,35 +1,31 @@
 from dataclasses import dataclass
 from typing import List
-from sqlalchemy import Integer, Boolean
-from sqlalchemy.orm import relationship, declarative_base, Mapped, mapped_column
-from models import queue_object
-from models.queue_object import QueueObject, QueueObjectDto
+from sqlalchemy import Column, Integer, Boolean
+from models.queue_object import QueueEntryDto
+from db_utils.base import Base
+from sqlalchemy.orm import relationship
 
-Base = declarative_base()
+class Guild(Base):
+  __tablename__ = 'guilds'
 
-class GuildMusicInformation(Base):
-    __tablename__ = 'guild_music_information'
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    guild_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    is_bot_busy: Mapped[bool] = mapped_column(Boolean, default=False)
-    loop_queue: Mapped[bool] = mapped_column(Boolean, default=False)
-    
-    queue: Mapped[List[QueueObject]] = relationship('QueueObject', backref='guild_music_info')
+  id = Column(Integer, primary_key=True)
+  loop_queue = Column(Boolean, nullable=False)
+  shuffle_queue = Column(Boolean, nullable=False)
+  queue = relationship("QueueEntry", backref="guilds", cascade="all, delete-orphan", lazy="select")
 
 @dataclass
-class GuildMusicInformationDto:
-  guild_id: int
-  is_bot_busy: bool
-  queue: List[QueueObjectDto]
+class GuildDto:
+  discord_guild_id: int
   loop_queue: bool
+  shuffle_queue: bool
+  queue: List[QueueEntryDto]
 
-
-def map(info: GuildMusicInformation) -> GuildMusicInformationDto:
-  """Convert GuildMusicInformation to GuildMusicInformationDto."""
-  return GuildMusicInformationDto(
-      guild_id=info.guild_id,
-      is_bot_busy=info.is_bot_busy,
-      queue=[queue_object.map(q) for q in info.queue],
-      loop_queue=info.loop_queue
+def map(guild: Guild) -> GuildDto:
+  queue_dtos = [QueueEntryDto(url=entry.url, already_played=entry.already_played) for entry in guild.queue]
+  
+  return GuildDto(
+    discord_guild_id=guild.id,
+    loop_queue=guild.loop_queue,
+    shuffle_queue=guild.shuffle_queue,
+    queue=queue_dtos
   )
