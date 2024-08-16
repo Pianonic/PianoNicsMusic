@@ -22,6 +22,13 @@ async def get_streaming_url(spotify_url) -> MusicInformation:
         track_link = info_dict.get('url', '')
         track_name = info_dict.get('title', '')
         track_author = info_dict.get('uploader', '')
-        image = info_dict.get('thumbnail', '')
 
-    return MusicInformation(streaming_url=track_link, song_name=track_name, author=track_author, image_url=image)
+        try:
+            thumbnails = info_dict.get('thumbnails', [])
+            square_thumbnails = [thumb for thumb in thumbnails if 'width' in thumb and 'height' in thumb and thumb['width'] == thumb['height']]
+            largest_square = max(square_thumbnails, key=lambda t: t['width'])
+            thumbnail_url = largest_square['url']
+        except:
+            thumbnail_url = info_dict.get('thumbnails', '')
+
+    return MusicInformation(streaming_url=track_link, song_name=track_name, author=track_author, image_url=thumbnail_url)

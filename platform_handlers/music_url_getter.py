@@ -81,7 +81,7 @@ async def get_urls(query: str) -> List[str]:
         return [yt_music_url]
     
     elif audio_content_type is AudioContentType.SINGLE_SONG:
-        return [yt_music_url]
+        return [query]
     
     # Spotify
     elif (audio_content_type is AudioContentType.PLAYLIST or audio_content_type is AudioContentType.ALBUM) and platform is Platform.SPOTIFY:
