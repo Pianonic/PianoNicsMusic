@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://example.com/path-to-your-image.jpg" alt="PianoNic's Music Bot" width="200"/>
+  <img src="https://github.com/Pianonic/PianoNicsMusic/blob/main/image/Logo.png?raw=true" alt="PianoNic's Music Bot" width="200"/>
 </p>
 
 # 🎹 PianoNic's Music Bot
