@@ -1,4 +1,4 @@
-# Use Python 3.9.2-slim as the base image
+# Use Python 3.10-slim as the base image
 FROM python:3.10-slim
 
 # Install FFmpeg and other dependencies
