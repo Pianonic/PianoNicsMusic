@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://example.com/path-to-your-image.jpg" alt="PianoNic's Music Bot" width="200"/>
+</p>
+
 # 🎹 PianoNic's Music Bot
 
 ## Description 🎶
@@ -9,25 +13,35 @@ PianoNic's Music Bot is a versatile Discord bot designed to elevate the music ex
 - **📜 Queue System:** Manage music playback with a queue system, allowing users to add, remove, and skip tracks.
 - **👌 Easy Commands:** Simple and intuitive commands for controlling music playback and interacting with the AI voice features.
 
-## Setup 🔧
-1. **Clone the Repository**
-   ```
-   git clone <repository-url>
-   ```
-2. **Install Dependencies**
-   ```
-   pip install -r requirements.txt
-   ```
-3. **Configure Environment Variables**
-   - Create a `.env` file in the root directory.
-   - Add your Discord bot token:
-     ```
-     DISCORD_TOKEN=your_discord_bot_token_here
-     ```
-4. **Launch the Bot**
-   ```
-   python main.py
-   ```
+## Installation
+
+1. **Clone the repository**:
+    ```sh
+    git clone https://github.com/yourusername/PianoNics-Music.git
+    cd PianoNics-Music
+    ```
+
+2. **Install dependencies**:
+    ```sh
+    pip install -r requirements.txt
+    ```
+
+3. **Set up the database**:
+    Ensure you have a database set up and configured in your environment.
+
+## Configuration
+
+1. **Create a `.env` file** in the root directory with the following structure:
+    ```properties
+    DISCORD_TOKEN=YOUR_DISCORD_TOKEN
+    SPOTIFY_CLIENT_ID=YOUR_SPOTIFY_CLIENT_ID
+    SPOTIFY_CLIENT_SECRET=YOUR_SPOTIFY_CLIENT_SECRET
+    ```
+
+2. **Run the bot**:
+    ```sh
+    python main.py
+    ```
 
 5. **Docker Setup 🐳**
    - **Build the Docker Image**
@@ -48,4 +62,4 @@ PianoNic's Music Bot is a versatile Discord bot designed to elevate the music ex
 We welcome contributions to PianoNic's Music Bot! Feel free to fork the repository, make your changes, and submit a pull request.
 
 ## License 📄
-This project is licensed under the [MIT License](LICENSE). You are free to use, modify, and distribute it according to the license.
+This project is licensed under the [EUCL License](LICENSE).
