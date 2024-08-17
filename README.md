@@ -1,8 +1,9 @@
+# 🎹 PianoNic's Music Bot
+
 <p align="center">
   <img src="https://github.com/Pianonic/PianoNicsMusic/blob/main/image/Logo.png?raw=true" alt="PianoNic's Music Bot" width="200"/>
 </p>
 
-# 🎹 PianoNic's Music Bot
 
 ## Description 🎶
 PianoNic's Music Bot is a versatile Discord bot designed to elevate the music experience on your Discord server. Not only does it play your favorite tracks on command, but it also features a unique functionality that allows it to play music with a trained AI voice, bringing a novel and engaging musical experience to your community.
