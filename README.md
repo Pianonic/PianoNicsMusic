@@ -39,7 +39,10 @@ PianoNic's Music Bot is a versatile Discord bot designed to elevate the music ex
     SPOTIFY_CLIENT_SECRET=YOUR_SPOTIFY_CLIENT_SECRET
     ```
 
-2. **Run the bot**:
+2. **Obtain Spotify Credentials:**
+    - To get your `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET`, create an application on [Spotify's Developer Dashboard](https://developer.spotify.com/documentation/web-api/concepts/apps). Follow the instructions on the Spotify Developer website to register your app and retrieve your credentials.
+
+3. **Run the bot**:
     ```sh
     python main.py
     ```
