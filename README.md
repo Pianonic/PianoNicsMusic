@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://example.com/path-to-your-image.jpg" alt="PianoNic's Music Bot" width="200"/>
+  <img src="https://github.com/Pianonic/PianoNicsMusic/blob/main/image/Logo.png?raw=true" alt="PianoNic's Music Bot" width="200"/>
 </p>
 
 # 🎹 PianoNic's Music Bot
@@ -59,7 +59,7 @@ PianoNic's Music Bot is a versatile Discord bot designed to elevate the music ex
 - **🔀 Managing the Queue:** Commands for queue management include adding, removing, and skipping tracks.
 
 ## Contributing 🤝
-We welcome contributions to PianoNic's Music Bot! Feel free to fork the repository, make your changes, and submit a pull request.
+We welcome contributions to PianoNic's Music Bot! Feel free to make changes, and submit a pull request.
 
 ## License 📄
 This project is licensed under the [EUCL License](LICENSE).
