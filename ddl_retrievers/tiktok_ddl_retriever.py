@@ -31,5 +31,4 @@ async def get_streaming_url(downloadURL):
         download_link = download_links[0]['href']
         return MusicInformation(streaming_url=download_link, song_name=title, author=author, image_url=image_url)
     else:
-        print("Error:", response.status_code)
-        return None
+        return Exception("Error:", response.status_code)

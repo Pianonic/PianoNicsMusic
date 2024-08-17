@@ -10,6 +10,7 @@ import websockets
 from discord.commands import Option, OptionChoice
 from discord.ext import commands
 from dotenv import load_dotenv
+import configparser
 
 # Local application imports
 from db_utils.db import setup_db
@@ -21,33 +22,41 @@ load_dotenv()
 
 model_choices = []
 
-#isServerRunning = rvc_server_pinger.check_connection()
-isServerRunning = False
-if(isServerRunning):
-    model_choices, index_choices = rvc_server_checker.fetch_choices()
+# isServerRunning = rvc_server_pinger.check_connection()
+# if(isServerRunning):
+#     model_choices, index_choices = rvc_server_checker.fetch_choices()
 
 intents = discord.Intents.default()
 intents.message_content = True
 
-bot = commands.Bot(command_prefix=[">"], intents=intents, help_command=None)
+bot = commands.Bot(command_prefix=[".", "!", "$"], intents=intents, help_command=None)
 
 @bot.event
 async def on_ready():
-    await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Activity(type=discord.ActivityType.listening, name="to da kuhle songs"))
-    user = await bot.fetch_user(566263212077481984)
-    
-    dm_channel = await user.create_dm()
-    
-    messages = await dm_channel.history().flatten()
-    
-    for msg in messages:
-        await msg.delete()
-
     await setup_db()
-
+    await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Activity(type=discord.ActivityType.listening, name="to da kuhle songs"))
     print(f"Bot is ready and logged in as {bot.user.name}")
+    
+    config = configparser.ConfigParser()
+    config.read('config.ini')
 
-    #await user.send(f"Bot is ready and logged in as {bot.user.name}")
+    ask_in_dms = config.getboolean('Bot', 'AskInDMs', fallback=False)
+    admin_userid = config.getint('Admin', 'UserID', fallback=0)
+    
+    if ask_in_dms and admin_userid:
+        user = await bot.fetch_user(admin_userid)
+        
+        dm_channel = await user.create_dm()
+        
+        messages = await dm_channel.history().flatten()
+        
+        for msg in messages:
+            try:
+                await msg.delete()
+            except:
+                print("skiped message")
+
+        await user.send(f"Bot is ready and logged in as {bot.user.name}")
 
 @bot.command(aliases=['next', 'advance', 'skip_song', 'move_on', 'play_next'])
 async def skip(ctx):
@@ -120,27 +129,27 @@ async def resume(ctx):
         else:
             await ctx.respond("❗ Bot is not connected to a Voice channel")
 
-@bot.command(aliases=['lp', 'repeat', 'cycle', 'toggle_loop', 'toggle_repeat'])
-async def loop(ctx):
-    guild = await db_utils.get_guild(ctx.guild.id)
+# @bot.command(aliases=['lp', 'repeat', 'cycle', 'toggle_loop', 'toggle_repeat'])
+# async def loop(ctx):
+#     guild = await db_utils.get_guild(ctx.guild.id)
 
-    if not guild:
-        if ctx.message:
-            await ctx.send("❗ Bot is not connected to a Voice channel")
-        else:
-            await ctx.respond("❗ Bot is not connected to a Voice channel")
-        return
+#     if not guild:
+#         if ctx.message:
+#             await ctx.send("❗ Bot is not connected to a Voice channel")
+#         else:
+#             await ctx.respond("❗ Bot is not connected to a Voice channel")
+#         return
     
-    if guild.loop_queue:
-        if ctx.message:
-            await ctx.message.add_reaction("🔄")
-        else:
-            await ctx.respond("Now looping the queue 🔄")
-    else:
-        if ctx.message:
-            await ctx.message.add_reaction("⏹️")
-        else:
-            await ctx.respond("Stopped looping the queue ⏹️")
+#     if guild.loop_queue:
+#         if ctx.message:
+#             await ctx.message.add_reaction("🔄")
+#         else:
+#             await ctx.respond("Now looping the queue 🔄")
+#     else:
+#         if ctx.message:
+#             await ctx.message.add_reaction("⏹️")
+#         else:
+#             await ctx.respond("Stopped looping the queue ⏹️")
 
 @bot.command(aliases=['fp', 'forceplay', 'playforce'])
 async def force_play(ctx, *, query=None):
@@ -199,7 +208,7 @@ async def help(ctx):
     )
 
     commands_list = [
-        ("stop", "Stops the currently playing audio"),
+        #("stop", "Stops the currently playing audio"),
         ("skip", "Skips the currently playing audio"),
         ("leave", "Leaves the voice channel and stops playing audio"),
         ("loop", "Toggles looping of the queue"),
@@ -275,9 +284,9 @@ async def skip_slash(ctx):
 async def leave_slash(ctx):
     await leave(ctx)
 
-@bot.slash_command(name="loop", description="Toggles looping of the queue")
-async def loop_slash(ctx):
-    await loop(ctx)
+# @bot.slash_command(name="loop", description="Toggles looping of the queue")
+# async def loop_slash(ctx):
+#     await loop(ctx)
 
 @bot.slash_command(name="shuffle", description="Shuffeling of the queue")
 async def shuffle_slash(ctx):
@@ -307,86 +316,85 @@ async def help_slash(ctx):
 async def play_slash(ctx, query: str):
     await play_command(ctx, query=query)
 
-if isServerRunning:
-    @bot.slash_command(
-        name="play_with_ai_voice",
-        description="A command to play with custom voice",
-        options=[
-            Option(  
-                name="model",
-                description="Choose a model",
-                required=True,
-                choices=[OptionChoice(name=choice, value=choice) for choice in model_choices],
-            ),
-            Option(
-                name="index",
-                description="Choose an index",
-                required=True,
-                choices=[OptionChoice(name=choice, value=choice) for choice in index_choices],
-            ),
-            Option(
-                name="pitch",
-                description="Enter a pitch",
-                required=True,
-                choices=[
-                    OptionChoice(name="↑12", value="12"),
-                    OptionChoice(name="↑6", value="6"),
-                    OptionChoice(name="0", value="0"),
-                    OptionChoice(name="↓6", value="-6"),
-                    OptionChoice(name="↓12", value="-12")
-                ],
-                type=int,
-            ),
-            Option(
-                name="url",
-                description="Enter a URL",
-                required=True,
-                type=str,
-            ),
-        ],
-    )
-    async def play_with_custom_voice(ctx, model: str, index: str, pitch: int, url: str):
-        async with websockets.connect('ws://localhost:8765', max_size=26_000_000) as websocket:
-            request_data = {
-                "command": "generate_ai_cover",
-                "model": model,
-                "index": index,
-                "pitch": pitch,
-                "url": url
-            }
+# if isServerRunning:
+#     @bot.slash_command(
+#         name="play_with_ai_voice",
+#         description="A command to play with custom voice",
+#         options=[
+#             Option(  
+#                 name="model",
+#                 description="Choose a model",
+#                 required=True,
+#                 choices=[OptionChoice(name=choice, value=choice) for choice in model_choices],
+#             ),
+#             Option(
+#                 name="index",
+#                 description="Choose an index",
+#                 required=True,
+#                 choices=[OptionChoice(name=choice, value=choice) for choice in index_choices],
+#             ),
+#             Option(
+#                 name="pitch",
+#                 description="Enter a pitch",
+#                 required=True,
+#                 choices=[
+#                     OptionChoice(name="↑12", value="12"),
+#                     OptionChoice(name="↑6", value="6"),
+#                     OptionChoice(name="0", value="0"),
+#                     OptionChoice(name="↓6", value="-6"),
+#                     OptionChoice(name="↓12", value="-12")
+#                 ],
+#                 type=int,
+#             ),
+#             Option(
+#                 name="url",
+#                 description="Enter a URL",
+#                 required=True,
+#                 type=str,
+#             ),
+#         ],
+#     )
+#     async def play_with_custom_voice(ctx, model: str, index: str, pitch: int, url: str):
+#         async with websockets.connect('ws://localhost:8765', max_size=26_000_000) as websocket:
+#             request_data = {
+#                 "command": "generate_ai_cover",
+#                 "model": model,
+#                 "index": index,
+#                 "pitch": pitch,
+#                 "url": url
+#             }
             
-            await websocket.send(json.dumps(request_data))
-            print(json.dumps(request_data))
+#             await websocket.send(json.dumps(request_data))
+#             print(json.dumps(request_data))
 
-            message = await websocket.recv()
-            data = json.loads(message)
+#             message = await websocket.recv()
+#             data = json.loads(message)
 
-            dc_message = await ctx.respond(embed=await embed_generator.create_embed("🗣️ AI Singer 🗣️", data["message"]))
+#             dc_message = await ctx.respond(embed=await embed_generator.create_embed("🗣️ AI Singer 🗣️", data["message"]))
 
-            # Listen for updates from the server
-            while True:
-                message = await websocket.recv()
-                data = json.loads(message)
-                #print(data)
-                if "message" in data:
-                    # Send a new message with the update
-                    await dc_message.edit(embed=await embed_generator.create_embed("AI Singer", data["message"]))
-                elif "file" in data:
-                    file_data = base64.b64decode(data["file"])
-                    file_like_object = io.BytesIO(file_data)
-                    edited_message = await dc_message.edit(embed=await embed_generator.create_embed("AI Singer", "Finished"), file=discord.File(file_like_object, filename="unknown.mp3"))
-                    file_url = edited_message.attachments[0].url
+#             # Listen for updates from the server
+#             while True:
+#                 message = await websocket.recv()
+#                 data = json.loads(message)
+#                 #print(data)
+#                 if "message" in data:
+#                     # Send a new message with the update
+#                     await dc_message.edit(embed=await embed_generator.create_embed("AI Singer", data["message"]))
+#                 elif "file" in data:
+#                     file_data = base64.b64decode(data["file"])
+#                     file_like_object = io.BytesIO(file_data)
+#                     edited_message = await dc_message.edit(embed=await embed_generator.create_embed("AI Singer", "Finished"), file=discord.File(file_like_object, filename="unknown.mp3"))
+#                     file_url = edited_message.attachments[0].url
 
-                    await play_command(ctx, query=file_url)
-                elif "error" in data:
-                    await dc_message.edit(f"Error from server: {data['error']}")
-                elif "queue_position" in data:
-                    await dc_message.edit(embed=await embed_generator.create_embed("AI Singer", f"Your request is at position {data['queue_position']} in the queue."))
-                elif "status" in data:
-                    print("made it out")
-                    break
+#                     await play_command(ctx, query=file_url)
+#                 elif "error" in data:
+#                     await dc_message.edit(f"Error from server: {data['error']}")
+#                 elif "queue_position" in data:
+#                     await dc_message.edit(embed=await embed_generator.create_embed("AI Singer", f"Your request is at position {data['queue_position']} in the queue."))
+#                 elif "status" in data:
+#                     print("made it out")
+#                     break
 
-        print("finished")
-
+#         print("finished")
 
 bot.run(os.getenv('DISCORD_TOKEN'))

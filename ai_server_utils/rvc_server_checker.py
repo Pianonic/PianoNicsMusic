@@ -10,7 +10,7 @@ def fetch_choices():
         index_choices = [choice.split("/")[-1] for choice in data["data"][1]["choices"]]
         return model_choices, index_choices
     except requests.exceptions.RequestException as e:
-        print("Error generating AI vocals:", e)
+        raise RuntimeError("Error generating AI vocals:", e)
 
 def check_connection():
     try:

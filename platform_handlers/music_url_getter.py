@@ -102,7 +102,7 @@ async def get_urls(query: str) -> List[str]:
             return [item['external_urls']['spotify'] for item in playlist_or_album['tracks']['items']]
 
         else:
-            print("error")
+            raise NotImplementedError("This type of Spotify content is not implemented.")
 
     # Soundcloud and Youtube
     elif (audio_content_type is AudioContentType.PLAYLIST or audio_content_type is AudioContentType.RADIO) and platform != Platform.SPOTIFY:
@@ -134,5 +134,5 @@ async def get_urls(query: str) -> List[str]:
                 return [query]    
 
     else:
-        print("not Implemented error")
+        raise NotImplementedError("This type of Audio Content is not implemented.")
             
