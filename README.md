@@ -59,7 +59,7 @@ PianoNic's Music Bot is a versatile Discord bot designed to elevate the music ex
 - **🔀 Managing the Queue:** Commands for queue management include adding, removing, and skipping tracks.
 
 ## Contributing 🤝
-We welcome contributions to PianoNic's Music Bot! Feel free to fork the repository, make your changes, and submit a pull request.
+We welcome contributions to PianoNic's Music Bot! Feel free to make changes, and submit a pull request.
 
 ## License 📄
 This project is licensed under the [EUCL License](LICENSE).
