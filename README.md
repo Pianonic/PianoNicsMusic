@@ -66,4 +66,4 @@ PianoNic's Music Bot is a versatile Discord bot designed to elevate the music ex
 We welcome contributions to PianoNic's Music Bot! Feel free to make changes, and submit a pull request.
 
 ## License 📄
-This project is licensed under the [EUCL License](LICENSE).
+This project is licensed under the [GPL-3.0 license](LICENSE).
