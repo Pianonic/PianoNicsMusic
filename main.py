@@ -164,7 +164,7 @@ async def force_play(ctx, *, query=None):
         return
 
     if (len(guild.queue) != 0) and voice_client:
-        await db_utils.add_force_next_play_to_queue(query)
+        await db_utils.add_force_next_play_to_queue(ctx.guild.id, query)
     else:
         await ctx.send("No song is currently playing")
     
