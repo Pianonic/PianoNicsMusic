@@ -193,12 +193,18 @@ async def shuffle(ctx):
             await ctx.respond("❗ Bot is not connected to a Voice channel")
         return
 
-    await db_utils.shuffle_playlist(ctx.guild.id)
+    shuffle_enabled = await db_utils.shuffle_playlist(ctx.guild.id)
 
     if ctx.message:
-        await ctx.message.add_reaction("🔀")
+        if shuffle_enabled:
+            await ctx.message.add_reaction("🔀")
+        else:
+            await ctx.message.add_reaction("➡️")
     else:
-        await ctx.respond("Now Shuffeling 🔀")
+        if shuffle_enabled:
+            await ctx.respond("Now shuffling 🔀")
+        else:
+            await ctx.respond("Shuffling disabled ➡️")
 
 @bot.command()
 async def ping(ctx):

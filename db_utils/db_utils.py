@@ -90,7 +90,7 @@ async def get_queue_entry(guild_id: int) -> str | None:
             session.commit()
             return url
         
-async def shuffle_playlist(guild_id: int):
+async def shuffle_playlist(guild_id: int) -> bool:
     for session in get_session():
         with session.begin():
             guild = session.query(Guild).filter_by(id=guild_id).first()
@@ -98,7 +98,10 @@ async def shuffle_playlist(guild_id: int):
             if not guild:
                 return None
             
-            guild.shuffle_queue = True
-            
+            guild.shuffle_queue = not guild.shuffle_queue
+            shuffle_enabled: bool = guild.shuffle_queue
+
             session.add(guild)
             session.commit()
+
+            return shuffle_enabled
