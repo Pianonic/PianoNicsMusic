@@ -152,7 +152,7 @@ async def resume(ctx):
 #             await ctx.respond("Stopped looping the queue ⏹️")
 
 @bot.command(aliases=['fp', 'forceplay', 'playforce'])
-async def force_play(ctx, *, query=None):
+async def force_play(ctx, *, query=None, insta_skip=False):
     guild = await db_utils.get_guild(ctx.guild.id)
     voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
 
@@ -168,10 +168,19 @@ async def force_play(ctx, *, query=None):
     else:
         await ctx.send("No song is currently playing")
     
-    if ctx.message:
-        await ctx.message.add_reaction("⏭️")
+    if insta_skip:
+        if ctx.message:
+            await ctx.message.add_reaction("⏭️")
+        else:
+            await ctx.respond("Force playing Song ⏭️")
+
+        voice_client.stop()
+        
     else:
-        await ctx.respond("Force playing Song ⏭️")
+        if ctx.message:
+            await ctx.message.add_reaction("📥")
+        else:
+            await ctx.respond("Playing next up 📥")
 
 @bot.command()
 async def shuffle(ctx):
@@ -303,10 +312,32 @@ async def pause_slash(ctx):
 @bot.slash_command(name="resume", description="Resumes the currently paused audio")
 async def resume_slash(ctx):
     await resume(ctx)
-    
-@bot.slash_command(name="force_play", description="Force plays the provided audio", options=[Option(name="query", required=True)])
-async def force_play_slash(ctx, query: str):
-    await force_play(ctx, query=query)
+
+@bot.slash_command(
+    name="force_play",
+    description="Force plays the provided audio",
+    options=[
+        Option(
+            name="query",
+            description="The audio track to play",
+            required=True,
+            type=str,
+        ),
+        Option(
+            name="insta_skip",
+            description="Skip to the next track immediately",
+            required=False,
+            choices=[
+                OptionChoice(name="Yes", value="true"),
+                OptionChoice(name="No", value="false")
+            ],
+            type=str,
+        ),
+    ]
+)
+async def force_play_slash(ctx, query: str, insta_skip: str = "false"):
+    insta_skip_bool = insta_skip == "true"
+    await force_play(ctx, query=query, insta_skip=insta_skip_bool)
 
 @bot.slash_command(name="help", description="Shows all available commands")
 async def help_slash(ctx):
