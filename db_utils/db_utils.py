@@ -61,16 +61,19 @@ async def get_queue_entry(guild_id: int) -> str | None:
     for session in get_session():
         with session.begin():
             guild = session.query(Guild).filter_by(id=guild_id).first()
-            
             if not guild:
                 return None
             
             force_queue_entry = session.query(QueueEntry).filter_by(guild_id=guild_id, already_played=False, force_play=True).first()
-
             if force_queue_entry:
-                return force_queue_entry.url
+                url: str = force_queue_entry.url
+                force_queue_entry.already_played = True
+                force_queue_entry.force_play = False
+                session.add(force_queue_entry)
+                session.commit()
+                return url
             
-            elif guild.shuffle_queue:
+            if guild.shuffle_queue:
                 queue_entries = session.query(QueueEntry).filter_by(guild_id=guild_id, already_played=False).all()
                 if not queue_entries:
                     return None
@@ -81,12 +84,10 @@ async def get_queue_entry(guild_id: int) -> str | None:
                     return None
 
             url: str = selected_entry.url
-
             selected_entry.already_played = True
             selected_entry.force_play = False
             session.add(selected_entry)
             session.commit()
-
             return url
         
 async def shuffle_playlist(guild_id: int):
