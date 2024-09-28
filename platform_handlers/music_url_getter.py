@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 import requests
 import ddl_retrievers.spotify_ddl_retriever
 import ddl_retrievers.tiktok_ddl_retriever
-import ddl_retrievers.universal_ddl_retrieve
+import ddl_retrievers.universal_ddl_retriever
 from models.music_information import MusicInformation
 import ddl_retrievers
 from platform_handlers.audio_content_type_finder import get_audio_content_type
@@ -42,17 +42,17 @@ async def get_streaming_url(query_url: str) -> MusicInformation:
             canonical_link = soup.find('link', rel='canonical')
             href = canonical_link.get('href')
 
-            return await ddl_retrievers.universal_ddl_retrieve.get_streaming_url(href)
+            return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(href)
         
         else:
-            return await ddl_retrievers.universal_ddl_retrieve.get_streaming_url(query_url)
+            return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(query_url)
 
 
     elif platform is Platform.ANYTHING_ELSE:
         audio_content_type = await get_audio_content_type(query_url, platform)
 
         if audio_content_type is AudioContentType.YT_DLP:
-            return await ddl_retrievers.universal_ddl_retrieve.get_streaming_url(query_url)
+            return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(query_url)
         else:
             parsed_url = urlparse(query_url)
             song_name = os.path.basename(parsed_url.path)
@@ -60,7 +60,7 @@ async def get_streaming_url(query_url: str) -> MusicInformation:
             return MusicInformation(query_url, song_name, "unkown", 'https://i.giphy.com/LNOZoHMI16ydtQ8bGG.webp')
         
     else:
-        return await ddl_retrievers.universal_ddl_retrieve.get_streaming_url(query_url)
+        return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(query_url)
 
 async def get_urls(query: str) -> List[str]:
     platform = await find_platform(query)
