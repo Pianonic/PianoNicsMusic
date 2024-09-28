@@ -39,6 +39,9 @@ async def _get_random_queue_entry(guild_id: int) -> str | None:
         return None
     return random.choice(list(queue_entries))
 
+async def _set_all_entrys_as_not_listened(guild_id: int):
+    QueueEntry.update(already_played=False).where(QueueEntry.guild == guild_id).execute()
+
 async def _mark_entry_as_listened(entry: QueueEntry):
     entry.already_played = True
     entry.force_play = False
@@ -65,9 +68,14 @@ async def get_queue_entry(guild_id: int) -> str | None:
         entry = QueueEntry.select().where((QueueEntry.guild == guild_id) & (QueueEntry.already_played == False)).order_by(QueueEntry.id).first()
 
 
+
     if entry:
         await _mark_entry_as_listened(entry)
         return entry.url
+    elif not entry and guild.loop_queue:
+        # if loop is active
+        await _set_all_entrys_as_not_listened(guild_id)
+        return await get_queue_entry(guild_id)
     else:
         return None
 
@@ -80,3 +88,13 @@ async def shuffle_playlist(guild_id: int) -> bool:
     guild.save()
     
     return guild.shuffle_queue
+
+async def toggle_loop(guild_id: int) -> bool:
+    guild: Guild | None = Guild.get_or_none(Guild.id == guild_id)
+    if not guild:
+        return None
+    
+    guild.loop_queue = not guild.loop_queue
+    guild.save()
+    
+    return guild.loop_queue

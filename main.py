@@ -133,27 +133,29 @@ async def resume(ctx):
 async def stop(ctx):
     await leave(ctx)
 
-# @bot.command(aliases=['lp', 'repeat', 'cycle', 'toggle_loop', 'toggle_repeat'])
-# async def loop(ctx):
-#     guild = await db_utils.get_guild(ctx.guild.id)
+@bot.command(aliases=['lp', 'repeat', 'cycle', 'toggle_loop', 'toggle_repeat'])
+async def loop(ctx):
+    guild = await db_utils.get_guild(ctx.guild.id)
 
-#     if not guild:
-#         if ctx.message:
-#             await ctx.send("❗ Bot is not connected to a Voice channel")
-#         else:
-#             await ctx.respond("❗ Bot is not connected to a Voice channel")
-#         return
+    if not guild:
+        if ctx.message:
+            await ctx.send("❗ Bot is not connected to a Voice channel")
+        else:
+            await ctx.respond("❗ Bot is not connected to a Voice channel")
+        return
     
-#     if guild.loop_queue:
-#         if ctx.message:
-#             await ctx.message.add_reaction("🔄")
-#         else:
-#             await ctx.respond("Now looping the queue 🔄")
-#     else:
-#         if ctx.message:
-#             await ctx.message.add_reaction("⏹️")
-#         else:
-#             await ctx.respond("Stopped looping the queue ⏹️")
+    is_looping = await db_utils.toggle_loop(ctx.guild.id)
+
+    if is_looping:
+        if ctx.message:
+            await ctx.message.add_reaction("🔄")
+        else:
+            await ctx.respond("Now looping the queue 🔄")
+    else:
+        if ctx.message:
+            await ctx.message.add_reaction("⏹️")
+        else:
+            await ctx.respond("Stopped looping the queue ⏹️")
 
 @bot.command(aliases=['fp', 'forceplay', 'playforce'])
 async def force_play(ctx, *, query=None, insta_skip=False):
@@ -230,7 +232,7 @@ async def help(ctx):
         ("stop", "Stops the currently playing audio"),
         ("skip", "Skips the currently playing audio"),
         ("leave", "Leaves the voice channel and stops playing audio"),
-        #("loop", "Toggles looping of the queue"),
+        ("loop", "Toggles looping of the queue"),
         ("ping", "Checks the bot's latency"),
         ("pause", "Pauses the currently playing audio"),
         ("resume", "Resumes the currently paused audio"),
@@ -308,9 +310,9 @@ async def leave_slash(ctx):
 async def stop_slash(ctx):
     await stop(ctx)
 
-# @bot.slash_command(name="loop", description="Toggles looping of the queue")
-# async def loop_slash(ctx):
-#     await loop(ctx)
+@bot.slash_command(name="loop", description="Toggles looping of the queue")
+async def loop_slash(ctx):
+    await loop(ctx)
 
 @bot.slash_command(name="shuffle", description="Shuffeling of the queue")
 async def shuffle_slash(ctx):
