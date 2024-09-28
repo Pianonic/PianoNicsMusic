@@ -1,25 +1,9 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from db_utils.base import Base
+from peewee import SqliteDatabase
 
-# Create a synchronous engine for the SQLite in-memory database
-engine = create_engine('sqlite:///:memory:', echo=True)
-
-# Create a configured "Session" class
-SessionLocal = sessionmaker(
-    bind=engine,
-    autocommit=False,
-    autoflush=False
-)
+db = SqliteDatabase(':memory:')
 
 async def setup_db():
-    # Create the tables in the in-memory SQLite database
-    Base.metadata.create_all(bind=engine)
+    from models.guild_music_information import Guild
+    from models.queue_object import QueueEntry
 
-def get_session():
-    # Provide a session instance
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
+    db.create_tables([Guild, QueueEntry])

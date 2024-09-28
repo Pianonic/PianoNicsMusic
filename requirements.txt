@@ -7,4 +7,4 @@ spotdl
 spotipy
 python-dotenv
 ytmusicapi
-SQLAlchemy
+peewee
