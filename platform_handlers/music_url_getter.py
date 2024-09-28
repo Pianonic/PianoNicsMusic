@@ -7,7 +7,6 @@ import ddl_retrievers.spotify_ddl_retriever
 import ddl_retrievers.tiktok_ddl_retriever
 import ddl_retrievers.universal_ddl_retrieve
 from models.music_information import MusicInformation
-from models.queue_object import QueueEntryDto
 import ddl_retrievers
 from platform_handlers.audio_content_type_finder import get_audio_content_type
 from platform_handlers.music_platform_finder import find_platform

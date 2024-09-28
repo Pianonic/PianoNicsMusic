@@ -1,107 +1,82 @@
 import random
 from typing import List
-from db_utils.db import get_session
-from models.guild_music_information import Guild, GuildDto
-from models import guild_music_information
-from models.queue_object import QueueEntry, QueueEntryDto
-from sqlalchemy import delete
+from models.dtos.QueueEntryDto import QueueEntryDto
+from models.dtos.GuildDto import GuildDto
+from models.guild_music_information import Guild
+from models.queue_object import QueueEntry
+from models.mappers import guild_music_information_mapper
 
 async def create_new_guild(discord_guild_id: int):
-    for session in get_session():
-        with session.begin():
-            guild_instance = Guild(id=discord_guild_id, loop_queue=False, shuffle_queue=False)
-            session.add(guild_instance)
-        session.commit()
+    Guild.create(id=discord_guild_id, loop_queue=False, shuffle_queue=False)
 
-async def get_guild(discord_guild_id: int) -> GuildDto | None:
-    for session in get_session():
-        with session.begin():
-            guild_instance = session.query(Guild).filter_by(id=discord_guild_id).first()
-            
-            if guild_instance:
-                return guild_music_information.map(guild_instance)
+async def get_guild(discord_guild_id: int) -> GuildDto | None: 
+    guild = Guild.get_or_none(Guild.id == discord_guild_id)
+    if guild:
+        return guild_music_information_mapper.map(guild)
     return None
 
 async def delete_queue(guild_id: int):
-    for session in get_session():
-        with session.begin():
-            session.query(QueueEntry).filter_by(guild_id=guild_id).delete(synchronize_session='fetch')
-        session.commit()
+    QueueEntry.delete().where(QueueEntry.guild == guild_id).execute()
 
 async def add_to_queue(guild_id: int, song_urls: List[str]):
-    for session in get_session():
-        with session.begin():
-            queue_entries = [QueueEntry(url=url, already_played=False, force_play=False) for url in song_urls]
-            for queue_object in queue_entries:
-                queue_object.guild_id = guild_id
-                session.add(queue_object)
-        session.commit()
+    queue_entries = [QueueEntry(guild=guild_id, url=url, already_played=False, force_play=False) for url in song_urls]
+    QueueEntry.bulk_create(queue_entries)
 
 async def add_force_next_play_to_queue(guild_id: int, song_url: str):
-    for session in get_session():
-        with session.begin():
-            session.add(QueueEntry(url=song_url, already_played=False, force_play=True, guild_id=guild_id))
-        session.commit()
+    QueueEntry.create(guild=guild_id, url=song_url, already_played=False, force_play=True)
 
 async def delete_guild(discord_guild_id: int):
-    for session in get_session():
-        with session.begin():
-            session.query(Guild).filter_by(id=discord_guild_id).delete(synchronize_session='fetch')
-        session.commit()
+    Guild.delete_by_id(discord_guild_id)
 
 async def get_queue(guild_id: int) -> List[QueueEntryDto]:
-    for session in get_session():
-        with session.begin():
-            queue_entries = session.query(QueueEntry).filter_by(guild_id=guild_id).all()
-            queue_dtos = [QueueEntryDto(url=entry.url, already_played=entry.already_played) for entry in queue_entries]
-            
-            return queue_dtos
-        
+    queue_entries = QueueEntry.select().where(QueueEntry.guild == guild_id)
+    queue_dtos = [QueueEntryDto(url=entry.url, already_played=entry.already_played) for entry in queue_entries]
+    return queue_dtos
+
+async def _get_random_queue_entry(guild_id: int) -> str | None:
+    queue_entries = QueueEntry.select().where((QueueEntry.guild == guild_id) & (QueueEntry.already_played == False))
+    if not queue_entries:
+        return None
+    return random.choice(list(queue_entries))
+
+async def _mark_entry_as_listened(entry: QueueEntry):
+    entry.already_played = True
+    entry.force_play = False
+    entry.save()
+
 async def get_queue_entry(guild_id: int) -> str | None:
-    for session in get_session():
-        with session.begin():
-            guild = session.query(Guild).filter_by(id=guild_id).first()
-            if not guild:
-                return None
-            
-            force_queue_entry = session.query(QueueEntry).filter_by(guild_id=guild_id, already_played=False, force_play=True).first()
-            if force_queue_entry:
-                url: str = force_queue_entry.url
-                force_queue_entry.already_played = True
-                force_queue_entry.force_play = False
-                session.add(force_queue_entry)
-                session.commit()
-                return url
-            
-            if guild.shuffle_queue:
-                queue_entries = session.query(QueueEntry).filter_by(guild_id=guild_id, already_played=False).all()
-                if not queue_entries:
-                    return None
-                selected_entry = random.choice(queue_entries)
-            else:
-                selected_entry = session.query(QueueEntry).filter_by(guild_id=guild_id, already_played=False).order_by(QueueEntry.id).first()
-                if not selected_entry:
-                    return None
+    guild: Guild | None = Guild.get_or_none(Guild.id == guild_id)
+    if not guild:
+        return None
+    
+    force_play_entry = QueueEntry.get_or_none(
+        (QueueEntry.guild == guild_id) & 
+        (QueueEntry.already_played == False) & 
+        (QueueEntry.force_play == True)
+    )
 
-            url: str = selected_entry.url
-            selected_entry.already_played = True
-            selected_entry.force_play = False
-            session.add(selected_entry)
-            session.commit()
-            return url
-        
+    if force_play_entry:
+        entry = force_play_entry
+    
+    elif guild.shuffle_queue:
+        entry = await _get_random_queue_entry(guild_id)
+
+    else:
+        entry = QueueEntry.select().where((QueueEntry.guild == guild_id) & (QueueEntry.already_played == False)).order_by(QueueEntry.id).first()
+
+
+    if entry:
+        await _mark_entry_as_listened(entry)
+        return entry.url
+    else:
+        return None
+
 async def shuffle_playlist(guild_id: int) -> bool:
-    for session in get_session():
-        with session.begin():
-            guild = session.query(Guild).filter_by(id=guild_id).first()
-            
-            if not guild:
-                return None
-            
-            guild.shuffle_queue = not guild.shuffle_queue
-            shuffle_enabled: bool = guild.shuffle_queue
-
-            session.add(guild)
-            session.commit()
-
-            return shuffle_enabled
+    guild: Guild | None = Guild.get_or_none(Guild.id == guild_id)
+    if not guild:
+        return None
+    
+    guild.shuffle_queue = not guild.shuffle_queue
+    guild.save()
+    
+    return guild.shuffle_queue
