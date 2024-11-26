@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  pianonic-music-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pianonic-music-bot
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+    restart: unless-stopped
