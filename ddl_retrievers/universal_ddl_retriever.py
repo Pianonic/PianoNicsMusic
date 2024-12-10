@@ -10,7 +10,6 @@ async def get_streaming_url(url) -> MusicInformation:
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=False)
-
         track_link = info_dict['url']
         track_name = info_dict['title']
         track_author = info_dict['uploader']

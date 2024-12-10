@@ -1,12 +1,12 @@
 from enums.audio_content_type import AudioContentType
-from enums.platform import Platform
+from enums.source import Source
 import requests
 
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
 
-async def get_audio_content_type(query_url: str, platform: Platform) -> AudioContentType:
-    if platform is Platform.YOUTUBE:
+async def get_audio_content_type(query_url: str, platform: Source) -> AudioContentType:
+    if platform is Source.YOUTUBE:
         parse_result = urlparse(query_url)
         query_params = parse_qs(parse_result.query)
         result = query_params.get("list", [None])[0]
@@ -19,7 +19,7 @@ async def get_audio_content_type(query_url: str, platform: Platform) -> AudioCon
         else:
             return AudioContentType.SINGLE_SONG
     
-    elif platform is Platform.SOUND_CLOUD:
+    elif platform is Source.SOUND_CLOUD:
         parse_result = urlparse(query_url)
         path = parse_result.path
         path_segments = path.strip("/").split("/")
@@ -29,7 +29,7 @@ async def get_audio_content_type(query_url: str, platform: Platform) -> AudioCon
         else:
             return AudioContentType.SINGLE_SONG
     
-    elif platform is Platform.SPOTIFY:
+    elif platform is Source.SPOTIFY:
         parse_result = urlparse(query_url)
         path = parse_result.path
         path_segments = path.strip("/").split("/")
@@ -43,10 +43,10 @@ async def get_audio_content_type(query_url: str, platform: Platform) -> AudioCon
         else:
             return AudioContentType.NOT_SUPPORTED
 
-    elif platform is Platform.NO_URL:
+    elif platform is Source.NO_URL:
         return AudioContentType.QUERY
     
-    elif platform is Platform.ANYTHING_ELSE:
+    elif platform is Source.UNKNOWN_SOURCE:
         response = requests.get(query_url)
         contentType = response.headers['content-type']
 
@@ -55,7 +55,7 @@ async def get_audio_content_type(query_url: str, platform: Platform) -> AudioCon
         else:
             return AudioContentType.YT_DLP
     
-    elif platform is Platform.TIK_TOK:
+    elif platform is Source.TIK_TOK:
         return AudioContentType.SINGLE_SONG
 
     else:

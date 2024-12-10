@@ -4,9 +4,6 @@ from spotdl import Spotdl
 import yt_dlp as youtube_dl
 from models.music_information import MusicInformation
 
-load_dotenv()
-
-spotdl = Spotdl(client_id=os.getenv('SPOTIFY_CLIENT_ID'), client_secret=os.getenv('SPOTIFY_CLIENT_SECRET'))
 
 async def get_streaming_url(spotify_url) -> MusicInformation:    
     song = spotdl.search([spotify_url])

@@ -9,9 +9,9 @@ import ddl_retrievers.universal_ddl_retriever
 from models.music_information import MusicInformation
 import ddl_retrievers
 from platform_handlers.audio_content_type_finder import get_audio_content_type
-from platform_handlers.music_platform_finder import find_platform
+from platform_handlers.music_source_finder import find_music_source
 from enums.audio_content_type import AudioContentType
-from enums.platform import Platform
+from enums.source import Source
 import yt_dlp
 import ytmusicapi
 
@@ -20,18 +20,19 @@ import spotipy
 import os
 
 async def get_streaming_url(query_url: str) -> MusicInformation:
-    platform = await find_platform(query_url)
+    platform = await find_music_source(query_url)
 
-    if platform is Platform.SPOTIFY:
+    if platform is Source.SPOTIFY:
         return await ddl_retrievers.spotify_ddl_retriever.get_streaming_url(query_url)
 
-    elif platform is Platform.TIK_TOK:
+    elif platform is Source.TIK_TOK:
         return await ddl_retrievers.tiktok_ddl_retriever.get_streaming_url(query_url)
 
-    elif platform is Platform.SOUND_CLOUD:
+    elif platform is Source.SOUND_CLOUD:
         parsed_url = urlparse(query_url)
-
         subdomain = parsed_url.hostname.split('.')[0]
+
+        sc_url = query_url
 
         if "api" in subdomain:
             response = requests.get(f"https://w.soundcloud.com/player/?url={query_url}")
@@ -42,13 +43,12 @@ async def get_streaming_url(query_url: str) -> MusicInformation:
             canonical_link = soup.find('link', rel='canonical')
             href = canonical_link.get('href')
 
-            return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(href)
+            sc_url = href
         
-        else:
-            return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(query_url)
+        return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(sc_url)
 
 
-    elif platform is Platform.ANYTHING_ELSE:
+    elif platform is Source.UNKNOWN_SOURCE:
         audio_content_type = await get_audio_content_type(query_url, platform)
 
         if audio_content_type is AudioContentType.YT_DLP:
@@ -63,14 +63,14 @@ async def get_streaming_url(query_url: str) -> MusicInformation:
         return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(query_url)
 
 async def get_urls(query: str) -> List[str]:
-    platform = await find_platform(query)
+    platform = await find_music_source(query)
     audio_content_type = await get_audio_content_type(query, platform)
 
     if audio_content_type is AudioContentType.NOT_SUPPORTED:
         return []
     
     # TikTok
-    elif audio_content_type is Platform.TIK_TOK:
+    elif audio_content_type is Source.TIK_TOK:
         return [query]
 
     elif audio_content_type is AudioContentType.QUERY:
@@ -83,7 +83,7 @@ async def get_urls(query: str) -> List[str]:
         return [query]
     
     # Spotify
-    elif (audio_content_type is AudioContentType.PLAYLIST or audio_content_type is AudioContentType.ALBUM) and platform is Platform.SPOTIFY:
+    elif (audio_content_type is AudioContentType.PLAYLIST or audio_content_type is AudioContentType.ALBUM) and platform is Source.SPOTIFY:
         client_credentials_manager = SpotifyClientCredentials(client_id=os.getenv('SPOTIFY_CLIENT_ID'), client_secret=os.getenv('SPOTIFY_CLIENT_SECRET'))
         sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
@@ -104,7 +104,7 @@ async def get_urls(query: str) -> List[str]:
             raise NotImplementedError("This type of Spotify content is not implemented.")
 
     # Soundcloud and Youtube
-    elif (audio_content_type is AudioContentType.PLAYLIST or audio_content_type is AudioContentType.RADIO) and platform != Platform.SPOTIFY:
+    elif (audio_content_type is AudioContentType.PLAYLIST or audio_content_type is AudioContentType.RADIO) and platform != Source.SPOTIFY:
         ydl_opts = {
             'extract_flat': True,
             'quiet': True,

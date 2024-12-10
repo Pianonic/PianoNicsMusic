@@ -1,0 +1,2 @@
+class InvalidDiscordTokenError(Exception):
+    pass

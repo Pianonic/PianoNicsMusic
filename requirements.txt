@@ -9,3 +9,4 @@ python-dotenv
 ytmusicapi
 peewee
 spotapi
+requests

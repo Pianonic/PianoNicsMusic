@@ -17,7 +17,10 @@ from db_utils.db import setup_db
 import db_utils.db_utils as db_utils
 from discord_utils import embed_generator, player
 from ai_server_utils import rvc_server_checker
+from exceptions.spotify_exceptions import InvalidSpotifyCredentialsError
 from platform_handlers import music_url_getter
+from setup.apply_config import apply_config
+from setup.check_credentials import check_discord_credentials, check_spotify_credentials
 load_dotenv()
 
 model_choices = []
@@ -26,6 +29,8 @@ model_choices = []
 # if(isServerRunning):
 #     model_choices, index_choices = rvc_server_checker.fetch_choices()
 
+check_discord_credentials()
+
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -33,30 +38,11 @@ bot = commands.Bot(command_prefix=[".", "!", "$"], intents=intents, help_command
 
 @bot.event
 async def on_ready():
+    await check_spotify_credentials()
     await setup_db()
+    await apply_config(bot)
     await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Activity(type=discord.ActivityType.listening, name="to da kuhle songs"))
     print(f"Bot is ready and logged in as {bot.user.name}")
-    
-    config = configparser.ConfigParser()
-    config.read('config.ini')
-
-    ask_in_dms = config.getboolean('Bot', 'AskInDMs', fallback=False)
-    admin_userid = config.getint('Admin', 'UserID', fallback=0)
-    
-    if ask_in_dms and admin_userid:
-        user = await bot.fetch_user(admin_userid)
-        
-        dm_channel = await user.create_dm()
-        
-        messages = await dm_channel.history().flatten()
-        
-        for msg in messages:
-            try:
-                await msg.delete()
-            except:
-                print("skiped message")
-
-        await user.send(f"Bot is ready and logged in as {bot.user.name}")
 
 @bot.command(aliases=['next', 'advance', 'skip_song', 'move_on', 'play_next'])
 async def skip(ctx):

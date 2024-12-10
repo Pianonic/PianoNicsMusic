@@ -1,24 +1,24 @@
 from urllib.parse import urlsplit
-from enums.platform import Platform
+from enums.source import Source
 
-async def find_platform(query_url: str) -> Platform:
+async def find_music_source(query_url: str) -> Source:
     split_url = urlsplit(query_url)
     hostname = split_url.hostname
 
     if not hostname:
-        return Platform.NO_URL
+        return Source.NO_URL
 
     elif "spotify" in hostname:
-        return Platform.SPOTIFY
+        return Source.SPOTIFY
 
     elif "tiktok" in hostname:
-        return Platform.TIK_TOK
+        return Source.TIK_TOK
 
     elif "youtube" in hostname or "youtu" in hostname:
-        return Platform.YOUTUBE
+        return Source.YOUTUBE
 
     elif "soundcloud" in hostname:
-        return Platform.SOUND_CLOUD
+        return Source.SOUND_CLOUD
 
     else:
-        return Platform.ANYTHING_ELSE
+        return Source.UNKNOWN_SOURCE
