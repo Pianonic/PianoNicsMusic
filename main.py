@@ -3,6 +3,7 @@ import base64
 import io
 import json
 import os
+import sys
 
 # Third-party imports
 import discord
@@ -13,6 +14,7 @@ from dotenv import load_dotenv
 import configparser
 
 # Local application imports
+from bot_utils import bot_safeguard
 from db_utils.db import setup_db
 import db_utils.db_utils as db_utils
 from discord_utils import embed_generator, player
@@ -57,6 +59,14 @@ async def on_ready():
                 print("skiped message")
 
         await user.send(f"Bot is ready and logged in as {bot.user.name}")
+
+@bot.event
+async def on_application_command_error(ctx, error):
+    await bot_safeguard.handle_error(ctx, bot, error)
+
+@bot.event
+async def on_command_error(ctx, error):
+    await bot_safeguard.handle_error(ctx, bot, error)
 
 @bot.command(aliases=['next', 'advance', 'skip_song', 'move_on', 'play_next'])
 async def skip(ctx):
@@ -277,15 +287,19 @@ async def play_command(ctx: discord.ApplicationContext, *, query=None):
         return
     else:
         await db_utils.create_new_guild(ctx.guild.id)
+        await db_utils.set_last_connected_voice_id(ctx.guild.id, ctx.author.voice.channel.id)
         await ctx.author.voice.channel.connect()
     
     while True:
-        url = await db_utils.get_queue_entry(ctx.guild.id)
+        try:
+            url = await db_utils.get_queue_entry(ctx.guild.id)
 
-        if not url:
-            break
+            if not url:
+                break
 
-        await player.play(ctx, url)   
+            await player.play(ctx, url)   
+        except Exception as error:
+            await bot_safeguard.handle_error(ctx, bot, error)
 
     voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
 

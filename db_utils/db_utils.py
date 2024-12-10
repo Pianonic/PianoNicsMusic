@@ -6,11 +6,11 @@ from models.guild_music_information import Guild
 from models.queue_object import QueueEntry
 from models.mappers import guild_music_information_mapper
 
-async def create_new_guild(discord_guild_id: int):
-    Guild.create(id=discord_guild_id, loop_queue=False, shuffle_queue=False)
+async def create_new_guild(guild_id: int):
+    Guild.create(id=guild_id, loop_queue=False, shuffle_queue=False)
 
-async def get_guild(discord_guild_id: int) -> GuildDto | None: 
-    guild = Guild.get_or_none(Guild.id == discord_guild_id)
+async def get_guild(guild_id: int) -> GuildDto | None: 
+    guild = Guild.get_or_none(Guild.id == guild_id)
     if guild:
         return guild_music_information_mapper.map(guild)
     return None
@@ -25,13 +25,17 @@ async def add_to_queue(guild_id: int, song_urls: List[str]):
 async def add_force_next_play_to_queue(guild_id: int, song_url: str):
     QueueEntry.create(guild=guild_id, url=song_url, already_played=False, force_play=True)
 
-async def delete_guild(discord_guild_id: int):
-    Guild.delete_by_id(discord_guild_id)
+async def delete_guild(guild_id: int):
+    Guild.delete_by_id(guild_id)
 
 async def get_queue(guild_id: int) -> List[QueueEntryDto]:
     queue_entries = QueueEntry.select().where(QueueEntry.guild == guild_id)
     queue_dtos = [QueueEntryDto(url=entry.url, already_played=entry.already_played) for entry in queue_entries]
     return queue_dtos
+
+async def set_last_connected_voice_id(guild_id: int, voice_id: int):
+    query = Guild.update(last_connected_voice_id=voice_id).where(Guild.id == guild_id)
+    query.execute()
 
 async def _get_random_queue_entry(guild_id: int) -> str | None:
     queue_entries = QueueEntry.select().where((QueueEntry.guild == guild_id) & (QueueEntry.already_played == False))

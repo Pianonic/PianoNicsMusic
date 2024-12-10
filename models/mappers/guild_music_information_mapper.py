@@ -11,5 +11,6 @@ def map(guild: Guild) -> GuildDto:
         discord_guild_id=guild.id,
         loop_queue=guild.loop_queue,
         shuffle_queue=guild.shuffle_queue,
-        queue=queue_dtos
+        queue=queue_dtos,
+        last_connected_voice_id=guild.last_connected_voice_id
     )

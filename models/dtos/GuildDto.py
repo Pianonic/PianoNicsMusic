@@ -7,3 +7,4 @@ class GuildDto:
     loop_queue: bool
     shuffle_queue: bool
     queue: list[QueueEntryDto]
+    last_connected_voice_id: int

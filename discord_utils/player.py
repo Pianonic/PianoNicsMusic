@@ -5,10 +5,12 @@ from discord_utils import embed_generator
 from platform_handlers import music_url_getter
 
 async def play(ctx: discord.ApplicationContext, queue_url: str):
+    loading_embed = await embed_generator.create_embed("Please Wait", "Searching song...")
+
     try:
-        loading_message = await ctx.respond(embed=await embed_generator.create_embed("Please Wait", "Searching song..."))
+        loading_message = await ctx.respond(embed=loading_embed)
     except:
-        loading_message = await ctx.send(embed=await embed_generator.create_embed("Please Wait", "Searching song..."))
+        loading_message = await ctx.send(embed=loading_embed)
 
     music_information = await music_url_getter.get_streaming_url(queue_url)
 
