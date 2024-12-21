@@ -41,8 +41,10 @@ PianoNic's Music Bot is a versatile Discord bot designed to elevate the music ex
     SPOTIFY_CLIENT_SECRET=YOUR_SPOTIFY_CLIENT_SECRET
     ```
 
-2. **Obtain Spotify Credentials**:
+2. **Obtain Spotify Credentials** (Optional):
     - Visit the [Spotify Developer Dashboard](https://developer.spotify.com/documentation/web-api/concepts/apps) to create an application and obtain your `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET`.
+
+> **Note:** Providing Spotify credentials is **optional**. The bot will still function without them. However, when credentials are provided, the bot will function for Spotify songs **60% faster**, as it can directly access Spotify's API for optimized track retrieval.
 
 ## Docker Setup 🐳
 
