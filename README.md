@@ -9,7 +9,7 @@ PianoNic's Music Bot is a versatile Discord bot designed to elevate the music ex
 
 ## Features 🌟
 - **🎵 Music Playback:** Play music directly in your Discord server's voice channels.
-- **🗣️ AI Voice Integration:** Use a trained AI voice to play music for a distinctive listening experience.
+- **🗣️ AI Voice Integration:** Use a trained AI voice to play music for a distinctive listening experience. (In developpment)
 - **🌐 Universal Source Playback:** Play music from any source, including streaming services, URLs, and local files.
 - **📜 Queue System:** Manage music playback with an intuitive queue system—add, remove, or skip tracks effortlessly.
 - **👌 Easy Commands:** Simple, user-friendly commands for controlling music playback and utilizing AI voice features.
