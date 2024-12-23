@@ -82,7 +82,7 @@ PianoNic's Music Bot is a versatile Discord bot designed to elevate the music ex
 
 ## Usage 🚀
 - **▶️ Playing Music:** Use the `play` command followed by the song name, URL, or file path to queue music.
-- **🎤 AI Voice Music:** Activate the AI voice feature for a unique music playback experience.
+- **🎤 AI Voice Music:** Activate the AI voice feature for a unique music playback experience. (In developpment)
 - **🔀 Managing the Queue:** Use commands to add, remove, or skip tracks in the queue.
 
 ## Contributing 🤝
