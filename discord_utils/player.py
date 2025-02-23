@@ -2,7 +2,7 @@ import asyncio
 import discord
 
 from discord_utils import embed_generator
-from platform_handlers import music_url_getter
+from music_utils import music_utils
 
 async def play(ctx: discord.ApplicationContext, queue_url: str):
     try:
@@ -10,7 +10,7 @@ async def play(ctx: discord.ApplicationContext, queue_url: str):
     except:
         loading_message = await ctx.send(embed=await embed_generator.create_embed("Please Wait", "Searching song..."))
 
-    music_information = await music_url_getter.get_streaming_url(queue_url)
+    music_information = await music_utils.get_streaming_url(queue_url)
 
     await loading_message.edit(embed=await embed_generator.create_embed("Now Playing", f"**{music_information.song_name}**\nBy **{music_information.author}**", music_information.image_url ))
     

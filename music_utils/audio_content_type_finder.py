@@ -5,8 +5,14 @@ import requests
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
 
-async def get_audio_content_type(query_url: str, platform: Source) -> AudioContentType:
-    if platform is Source.YOUTUBE:
+import music_utils.music_source_finder as MSF
+
+
+async def get_audio_content_type(query_url: str, source: Source = None) -> AudioContentType:
+    if source is None:
+        source = await MSF.find_music_source(query_url)
+
+    if source is Source.YOUTUBE:
         parse_result = urlparse(query_url)
         query_params = parse_qs(parse_result.query)
         result = query_params.get("list", [None])[0]
@@ -19,7 +25,7 @@ async def get_audio_content_type(query_url: str, platform: Source) -> AudioConte
         else:
             return AudioContentType.SINGLE_SONG
     
-    elif platform is Source.SOUND_CLOUD:
+    elif source is Source.SOUND_CLOUD:
         parse_result = urlparse(query_url)
         path = parse_result.path
         path_segments = path.strip("/").split("/")
@@ -29,7 +35,7 @@ async def get_audio_content_type(query_url: str, platform: Source) -> AudioConte
         else:
             return AudioContentType.SINGLE_SONG
     
-    elif platform is Source.SPOTIFY:
+    elif source is Source.SPOTIFY:
         parse_result = urlparse(query_url)
         path = parse_result.path
         path_segments = path.strip("/").split("/")
@@ -43,10 +49,13 @@ async def get_audio_content_type(query_url: str, platform: Source) -> AudioConte
         else:
             return AudioContentType.NOT_SUPPORTED
 
-    elif platform is Source.NO_URL:
+    elif source is Source.TIK_TOK:
+        return AudioContentType.SINGLE_SONG
+    
+    elif source is Source.NO_URL:
         return AudioContentType.QUERY
     
-    elif platform is Source.UNKNOWN_SOURCE:
+    elif source is Source.UNKNOWN_SOURCE:
         response = requests.get(query_url)
         contentType = response.headers['content-type']
 
@@ -54,9 +63,6 @@ async def get_audio_content_type(query_url: str, platform: Source) -> AudioConte
             return AudioContentType.SINGLE_SONG
         else:
             return AudioContentType.YT_DLP
-    
-    elif platform is Source.TIK_TOK:
-        return AudioContentType.SINGLE_SONG
-
+        
     else:
-        return AudioContentType.NOT_SUPPORTED
+        raise Exception("Error determining the audio content type.")

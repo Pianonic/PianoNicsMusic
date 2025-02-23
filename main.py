@@ -18,9 +18,10 @@ import db_utils.db_utils as db_utils
 from discord_utils import embed_generator, player
 from ai_server_utils import rvc_server_checker
 from exceptions.spotify_exceptions import InvalidSpotifyCredentialsError
-from platform_handlers import music_url_getter
+from music_utils import music_utils
 from setup.apply_config import apply_config
 from setup.check_credentials import check_discord_credentials, check_spotify_credentials
+from setup.spotify_client_manager import initialize_spotify_client
 load_dotenv()
 
 model_choices = []
@@ -38,9 +39,10 @@ bot = commands.Bot(command_prefix=[".", "!", "$"], intents=intents, help_command
 
 @bot.event
 async def on_ready():
-    await check_spotify_credentials()
+    spotify_credentials_provided = await check_spotify_credentials()
     await setup_db()
     await apply_config(bot)
+    await initialize_spotify_client(spotify_credentials_provided)
     await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Activity(type=discord.ActivityType.listening, name="to da kuhle songs"))
     print(f"Bot is ready and logged in as {bot.user.name}")
 
@@ -206,6 +208,13 @@ async def ping(ctx):
     else:
         await ctx.respond(f'Pong! Latency is {latency}ms')
 
+@bot.command()
+async def version(ctx):
+    if ctx.message:
+        await ctx.send(f'Bot-Version 0.9.0')
+    else:
+        await ctx.respond(f'Bot-Version 0.9.0')
+
 @bot.command(aliases=['h', 'commands', 'command', 'cmds', 'cmd', 'info', 'information', 'assist', 'assistme', 'helpme', 'helppls', 'helpmepls', 'helpmeplease', 'helpmeout', 'helpmeoutpls', 'helpmeoutplease'])
 async def help(ctx):
     embed = discord.Embed(
@@ -215,16 +224,17 @@ async def help(ctx):
     )
 
     commands_list = [
-        ("stop", "Stops the currently playing audio"),
+        ("play", "Plays the provided audio"),
+        ("force_play", "Force plays the provided audio"),
         ("skip", "Skips the currently playing audio"),
-        ("leave", "Leaves the voice channel and stops playing audio"),
+        ("shuffle", "Shuffles the current music queue"),
         ("loop", "Toggles looping of the queue"),
-        ("ping", "Checks the bot's latency"),
         ("pause", "Pauses the currently playing audio"),
         ("resume", "Resumes the currently paused audio"),
-        ("force_play", "Force plays the provided audio"),
-        ("play", "Plays the provided audio"),
-        ("shuffle", "Shuffles the current music queue"),
+        ("stop", "Stops the currently playing audio"),
+        ("leave", "Leaves the voice channel and stops playing audio"),
+        ("ping", "Checks the bot's latency"),
+        ("version", "Shows the version of the bot")
         #("play_with_ai_voice", "Plays the provided audio with custom AI voice")
     ]
 
@@ -242,7 +252,7 @@ async def help(ctx):
 async def play_command(ctx: discord.ApplicationContext, *, query=None):
     guild = await db_utils.get_guild(ctx.guild.id)
 
-    song_urls = await music_url_getter.get_urls(query)
+    song_urls = await music_utils.retrieve_media_links(query)
     await db_utils.add_to_queue(ctx.guild.id, song_urls)
     
     if guild:
@@ -311,6 +321,10 @@ async def ping_slash(ctx):
 @bot.slash_command(name="pause", description="Pauses the currently playing audio")
 async def pause_slash(ctx):
     await pause(ctx)
+
+@bot.slash_command(name="version", description="Shows the version of the bot")
+async def version_slash(ctx):
+    await version(ctx)
 
 @bot.slash_command(name="resume", description="Resumes the currently paused audio")
 async def resume_slash(ctx):

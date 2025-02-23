@@ -10,3 +10,4 @@ ytmusicapi
 peewee
 spotapi
 requests
+pymongo
