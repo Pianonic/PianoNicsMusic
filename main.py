@@ -305,6 +305,10 @@ async def version(ctx):
 ################# SLASH COMMANDS ##################
 ###################################################
 
+@bot.slash_command(name="version", description="Gets the Bot version")
+async def version_slash(ctx):
+    await version(ctx)
+
 @bot.slash_command(name="skip", description="Skips the currently playing audio")
 async def skip_slash(ctx):
     await skip(ctx)
