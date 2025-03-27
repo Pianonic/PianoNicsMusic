@@ -74,30 +74,24 @@ async def get_urls(query: str) -> List[str]:
         return [query]
 
     elif audio_content_type is AudioContentType.QUERY:
-        yt = ytmusicapi.YTMusic()
-        search_results = yt.search(query)
-        
-        if search_results:
-            for result in search_results:
-                if isinstance(result, dict) and 'videoId' in result:
-                    video_id = result['videoId']
-                    yt_music_url = f"https://music.youtube.com/watch?v={video_id}"
-                    return [yt_music_url]
-        
-        ydl_opts = {
+        try:
+            yt = ytmusicapi.YTMusic()
+            video_id = yt.search(query)[0]["videoId"]
+            yt_music_url = f"https://music.youtube.com/watch?v={video_id}"
+            return [yt_music_url]
+        except:
+            ydl_opts = {
             'quiet': True,
             'skip_download': True,
             'noplaylist': True,
-        }
+            }
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            search_results = ydl.extract_info(f"ytsearch:{query}", download=False)
-            if search_results and "entries" in search_results and len(search_results["entries"]) > 0:
-                video_url = f"https://www.youtube.com/watch?v={search_results['entries'][0]['id']}"
-                return [video_url]
-            else:
-                return []
-        
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                search_results = ydl.extract_info(f"ytsearch:{query}", download=False)
+                if search_results and "entries" in search_results and len(search_results["entries"]) > 0:
+                    video_url = f"https://www.youtube.com/watch?v={search_results['entries'][0]['id']}"
+                    return [video_url]
+    
     elif audio_content_type is AudioContentType.SINGLE_SONG:
         return [query]
     
