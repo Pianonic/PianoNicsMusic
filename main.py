@@ -294,6 +294,13 @@ async def play_command(ctx: discord.ApplicationContext, *, query=None):
         
     await db_utils.delete_guild(ctx.guild.id)
 
+@bot.command(name="version", aliases=['v', 'ver'])
+async def version(ctx):
+    if ctx.message:
+        await ctx.send("1.0.0")
+    else:
+        await ctx.respond("1.0.0")
+
 ###################################################
 ################# SLASH COMMANDS ##################
 ###################################################
