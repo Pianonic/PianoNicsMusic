@@ -73,7 +73,6 @@ async def _mark_entry_as_listened(entry: QueueEntry):
         entry.save()
     except Exception as e:
         print(f"Error marking entry as listened: {e}")
-        # This is not critical, continue anyway
 
 async def get_queue_entry(guild_id: int) -> str | None:
     try:
@@ -110,6 +109,13 @@ async def get_queue_entry(guild_id: int) -> str | None:
             except Exception as e:
                 print(f"Error resetting queue for guild {guild_id}: {e}")
                 return None
+        
+        # If we reach here, the queue is finished and not looping - clear it
+        try:
+            await delete_queue(guild_id)
+            print(f"Queue cleared for guild {guild_id} - all songs played")
+        except Exception as e:
+            print(f"Error clearing finished queue for guild {guild_id}: {e}")
         
         return None
     except Exception as e:
@@ -164,3 +170,29 @@ async def toggle_loop(guild_id: int) -> bool:
     guild.save()
     
     return guild.loop_queue
+
+async def is_queue_empty(guild_id: int) -> bool:
+    """Check if the queue has any remaining unplayed songs"""
+    try:
+        remaining_entries = QueueEntry.select().where(
+            (QueueEntry.guild == guild_id) & 
+            (QueueEntry.already_played == False)
+        ).count()
+        return remaining_entries == 0
+    except Exception as e:
+        print(f"Error checking if queue is empty for guild {guild_id}: {e}")
+        return True
+
+async def clear_finished_queue_if_needed(guild_id: int):
+    """Clear the queue if all songs have been played and loop is disabled"""
+    try:
+        guild: Guild | None = Guild.get_or_none(Guild.id == guild_id)
+        if not guild:
+            return
+        
+        # Only clear if not looping and queue is empty
+        if not guild.loop_queue and await is_queue_empty(guild_id):
+            await delete_queue(guild_id)
+            print(f"Queue automatically cleared for guild {guild_id}")
+    except Exception as e:
+        print(f"Error auto-clearing queue for guild {guild_id}: {e}")
