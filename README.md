@@ -117,17 +117,18 @@ docker-compose up --build -d
 
 | Command | Aliases | Description |
 |---------|---------|-------------|
-| `play <query>` | `p`, `pl`, `queue`, `add` | Play music from URL, search query, or playlist |
-| `skip` | `next`, `advance` | Skip the currently playing song |
-| `pause` | `hold`, `freeze` | Pause the current song |
-| `resume` | `continue`, `unpause` | Resume paused playback |
-| `leave` | `exit`, `quit`, `disconnect` | Leave voice channel and clear queue |
-| `loop` | `repeat`, `cycle` | Toggle queue looping |
+| `play <query>` | `p`, `pl`, `play_song`, `queue`, `add`, `enqueue` | Play music from URL, search query, or playlist |
+| `skip` | `next`, `advance`, `skip_song`, `move_on`, `play_next` | Skip the currently playing song |
+| `pause` | `hold`, `freeze`, `break`, `wait`, `intermission` | Pause the current song |
+| `resume` | `continue`, `unpause`, `proceed`, `restart`, `go`, `resume_playback` | Resume paused playback |
+| `leave` | `exit`, `quit`, `bye`, `farewell`, `goodbye`, `leave_now`, `disconnect`, `stop_playing` | Leave voice channel and clear queue |
+| `stop` | | Stop playing and leave voice channel (same as leave) |
+| `loop` | `lp`, `repeat`, `cycle`, `toggle_loop`, `toggle_repeat` | Toggle queue looping |
 | `shuffle` | | Toggle queue shuffling |
-| `force_play <query>` | `fp`, `forceplay` | Add song to front of queue |
-| `bot_status` | `status`, `info` | Show current bot and queue status |
-| `version` | `v`, `ver` | Display bot version information |
-| `help` | `h`, `commands` | Show all available commands |
+| `force_play <query>` | `fp`, `forceplay`, `playforce` | Add song to front of queue (with optional instant skip) |
+| `bot_status` | `status`, `current`, `now_playing` | Show current bot and queue status |
+| `information` | `v`, `ver`, `version` | Display bot version and system information |
+| `help` | `h`, `commands`, `command`, `cmds`, `cmd`, `info`, `assist`, `assistme`, `helpme`, `helppls`, `helpmepls`, `helpmeplease`, `helpmeout`, `helpmeoutpls`, `helpmeoutplease` | Show all available commands |
 | `ping` | | Check bot latency |
 
 ### 🎛️ Queue Management
