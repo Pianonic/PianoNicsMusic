@@ -15,6 +15,7 @@
   <a><img src="https://img.shields.io/badge/Version-1.2.0-2c234a.svg"/></a>
   <a><img src="https://img.shields.io/badge/Python-3.8+-2c234a.svg"/></a>
 </p>
+
 ---
 
 ## 🎶 What is PianoNic's Music Bot?
