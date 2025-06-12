@@ -30,7 +30,6 @@ PianoNic's Music Bot is a versatile Discord bot designed to elevate the music ex
 -   **📜 Queue System:** Manage music playback with an intuitive queue system—add, remove, or skip tracks effortlessly.
 -   **👌 Easy Commands:** Simple, user-friendly commands for controlling music playback and utilizing AI voice features.
 -   **🛡️ Enhanced Error Handling:** Robust error recovery prevents the bot from getting stuck during playback issues.
--   **💾 Persistent Database:** Queue and settings are preserved between bot restarts.
 -   **📊 Status Monitoring:** Real-time bot status and queue information commands.
 -   **🔄 Version Management:** Built-in versioning system with detailed release information.
 
