@@ -24,7 +24,6 @@ async def play(ctx: discord.ApplicationContext, queue_url: str):
             await loading_message.edit(embed=await embed_generator.create_embed("Now Playing", f"**{music_information.song_name}**\nBy **{music_information.author}**", music_information.image_url))
         except Exception as e:
             print(f"Error updating loading message: {e}")
-            # Continue anyway, this is not critical
         
         voice_client: discord.VoiceClient = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
         
@@ -49,17 +48,9 @@ async def play(ctx: discord.ApplicationContext, queue_url: str):
             print(f"Error starting playback: {e}")
             raise Exception(f"Failed to start audio playback: {e}")
 
-        # Wait for playback to finish with timeout to prevent infinite waiting
-        timeout_counter = 0
-        max_timeout = 1800  # 30 minutes max per song
-        while (voice_client.is_playing() or voice_client.is_paused()) and timeout_counter < max_timeout:
+        # Wait for playback to finish
+        while voice_client.is_playing() or voice_client.is_paused():
             await asyncio.sleep(1)
-            timeout_counter += 1
-            
-        if timeout_counter >= max_timeout:
-            print(f"Song playback timed out after {max_timeout} seconds")
-            if voice_client.is_playing():
-                voice_client.stop()
                 
     except Exception as e:
         print(f"Error in play function: {e}")

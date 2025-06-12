@@ -13,11 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 📋 **Versioned Embeds**: All embeds now display the bot version in footer
 - 🛡️ **Improved Error Handling**: Enhanced exception handling throughout the codebase
 - 💾 **Persistent Database**: Switched from in-memory to persistent SQLite database
-- ⏱️ **Song Timeout Protection**: Added 30-minute timeout per song to prevent infinite loops
 - 🔧 **Database Error Recovery**: Better database error handling and recovery mechanisms
 
 ### Changed
-- 🗂️ **Database Storage**: Changed from in-memory (`:memory:`) to persistent file-based database
 - 📊 **Error Reporting**: Improved error logging and user feedback
 - 🎵 **Player Reliability**: Enhanced audio player with better error recovery
 - 🔄 **Queue Management**: More robust queue handling with error recovery

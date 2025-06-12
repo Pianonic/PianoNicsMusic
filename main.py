@@ -254,7 +254,7 @@ async def ping(ctx):
     else:
         await ctx.respond(f'Pong! Latency is {latency}ms')
 
-@bot.command(aliases=['h', 'commands', 'command', 'cmds', 'cmd', 'info', 'information', 'assist', 'assistme', 'helpme', 'helppls', 'helpmepls', 'helpmeplease', 'helpmeout', 'helpmeoutpls', 'helpmeoutplease'])
+@bot.command(aliases=['h', 'commands', 'command', 'cmds', 'cmd', 'info', 'assist', 'assistme', 'helpme', 'helppls', 'helpmepls', 'helpmeplease', 'helpmeout', 'helpmeoutpls', 'helpmeoutplease'])
 async def help(ctx):
     embed = discord.Embed(
         title="Bot Commands",
@@ -271,7 +271,7 @@ async def help(ctx):
         ("pause", "Pauses the currently playing audio"),
         ("resume", "Resumes the currently paused audio"),        ("force_play", "Force plays the provided audio"),
         ("play", "Plays the provided audio"),        ("shuffle", "Shuffles the current music queue"),
-        ("version", "Shows bot version information"),
+        ("information", "Shows bot information and version"),
         ("bot_status", "Shows current bot and queue status"),
         #("play_with_ai_voice", "Plays the provided audio with custom AI voice")
     ]
@@ -351,8 +351,8 @@ async def play_command(ctx: discord.ApplicationContext, *, query=None):
         except Exception as e:
             print(f"Error cleaning up guild data: {e}")
 
-@bot.command(name="version", aliases=['v', 'ver'])
-async def version(ctx):
+@bot.command(name="information", aliases=['v', 'ver', 'version'])
+async def information(ctx):
     try:
         version_info = get_version_info()
         version_embed = discord.Embed(
@@ -421,9 +421,9 @@ async def version(ctx):
 ################# SLASH COMMANDS ##################
 ###################################################
 
-@bot.slash_command(name="version", description="Gets the Bot version")
-async def version_slash(ctx):
-    await version(ctx)
+@bot.slash_command(name="information", description="Gets the Bot information")
+async def information_slash(ctx):
+    await information(ctx)
 
 @bot.slash_command(name="skip", description="Skips the currently playing audio")
 async def skip_slash(ctx):
@@ -486,6 +486,10 @@ async def force_play_slash(ctx, query: str, insta_skip: str = "false"):
 @bot.slash_command(name="help", description="Shows all available commands")
 async def help_slash(ctx):
     await help(ctx)
+
+@bot.slash_command(name="bot_status", description="Shows current bot and queue status")
+async def bot_status_slash(ctx):
+    await bot_status(ctx)
 
 @bot.slash_command(name="play", description="Plays the provided audio", options=[Option(name="query", required=True)])
 async def play_slash(ctx, query: str):
@@ -572,7 +576,7 @@ async def play_slash(ctx, query: str):
 
 #         print("finished")
 
-@bot.command(aliases=['status', 'info', 'current', 'now_playing'])
+@bot.command(aliases=['status', 'current', 'now_playing'])
 async def bot_status(ctx):
     try:
         voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -624,8 +628,7 @@ async def bot_status(ctx):
             status_embed.add_field(name="📝 Queue", value="No active session", inline=True)
             status_embed.add_field(name="Loop", value="⏹️ Off", inline=True)
             status_embed.add_field(name="Shuffle", value="➡️ Off", inline=True)
-        
-        # Server info
+          # Server info
         latency = round(bot.latency * 1000)
         status_embed.add_field(name="📡 Latency", value=f"{latency}ms", inline=True)
         
@@ -645,9 +648,5 @@ async def bot_status(ctx):
                 await ctx.respond("❗ An error occurred while getting status")
         except:
             pass
-
-@bot.slash_command(name="bot_status", description="Shows current bot and queue status")
-async def bot_status_slash(ctx):
-    await bot_status(ctx)
 
 bot.run(os.getenv('DISCORD_TOKEN'))
