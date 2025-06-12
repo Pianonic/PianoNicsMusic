@@ -4,6 +4,7 @@ import io
 import json
 import os
 import sys
+import logging
 
 # Third-party imports
 import discord
@@ -20,7 +21,12 @@ from discord_utils import embed_generator, player
 from ai_server_utils import rvc_server_checker
 from platform_handlers import music_url_getter
 from utils import get_version, get_full_version_info, get_version_info
+
 load_dotenv()
+
+# Load configuration
+config = configparser.ConfigParser()
+config.read('config.ini')
 
 model_choices = []
 
@@ -39,9 +45,6 @@ async def on_ready():
     await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Activity(type=discord.ActivityType.listening, name="to da kuhle songs"))
     print(f"Bot is ready and logged in as {bot.user.name}")
     
-    config = configparser.ConfigParser()
-    config.read('config.ini')
-
     ask_in_dms = config.getboolean('Bot', 'AskInDMs', fallback=False)
     admin_userid = config.getint('Admin', 'UserID', fallback=0)
     
@@ -56,7 +59,8 @@ async def on_ready():
             try:
                 await msg.delete()
             except:
-                print("skiped message")
+                if verbose_logging:
+                    print("skiped message")
 
         await user.send(f"Bot is ready and logged in as {bot.user.name}")
 
@@ -394,13 +398,6 @@ async def information(ctx):
             name="📊 Bot Statistics", 
             value=f"Servers: `{len(bot.guilds)}`\nLatency: `{round(bot.latency * 1000)}ms`", 
             inline=True
-        )
-        
-        # Add some feature highlights
-        version_embed.add_field(
-            name="🎵 Features", 
-            value="• Multi-platform music support\n• Queue management\n• Loop & Shuffle modes\n• Enhanced error handling\n• Persistent database\n• Real-time status monitoring", 
-            inline=False
         )
         
         version_embed.set_footer(text=get_full_version_info())
