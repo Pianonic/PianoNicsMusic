@@ -168,10 +168,6 @@ docker-compose up --build -d
 - Use `bot_status` to check the current bot state
 - Use `version` to check your bot version and ensure you have the latest updates
 
-## 🤝 Contributing
-
-We welcome contributions to PianoNic's Music Bot! Please fork the repository, make your changes, and submit a pull request.
-
 ## 📄 License
 
 This project is licensed under the [CC BY-NC 4.0](LICENSE.md).
