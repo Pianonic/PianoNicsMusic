@@ -22,45 +22,50 @@ import os
 async def get_streaming_url(query_url: str) -> MusicInformation:
     platform = await find_platform(query_url)
 
-    if platform is Platform.SPOTIFY:
-        return await ddl_retrievers.spotify_ddl_retriever.get_streaming_url(query_url)
+    try:
+        if platform is Platform.SPOTIFY:
+            return await ddl_retrievers.spotify_ddl_retriever.get_streaming_url(query_url)
 
-    elif platform is Platform.TIK_TOK:
-        return await ddl_retrievers.tiktok_ddl_retriever.get_streaming_url(query_url)
+        elif platform is Platform.TIK_TOK:
+            return await ddl_retrievers.tiktok_ddl_retriever.get_streaming_url(query_url)
 
-    elif platform is Platform.SOUND_CLOUD:
-        parsed_url = urlparse(query_url)
-
-        subdomain = parsed_url.hostname.split('.')[0]
-
-        if "api" in subdomain:
-            response = requests.get(f"https://w.soundcloud.com/player/?url={query_url}")
-            html_content = response.text
-
-            soup = BeautifulSoup(html_content, 'html.parser')
-
-            canonical_link = soup.find('link', rel='canonical')
-            href = canonical_link.get('href')
-
-            return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(href)
-        
-        else:
-            return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(query_url)
-
-
-    elif platform is Platform.ANYTHING_ELSE:
-        audio_content_type = await get_audio_content_type(query_url, platform)
-
-        if audio_content_type is AudioContentType.YT_DLP:
-            return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(query_url)
-        else:
+        elif platform is Platform.SOUND_CLOUD:
             parsed_url = urlparse(query_url)
-            song_name = os.path.basename(parsed_url.path)
+
+            subdomain = parsed_url.hostname.split('.')[0]
+
+            if "api" in subdomain:
+                response = requests.get(f"https://w.soundcloud.com/player/?url={query_url}")
+                html_content = response.text
+
+                soup = BeautifulSoup(html_content, 'html.parser')
+
+                canonical_link = soup.find('link', rel='canonical')
+                href = canonical_link.get('href')
+
+                return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(href)
             
-            return MusicInformation(query_url, song_name, "unkown", 'https://i.giphy.com/LNOZoHMI16ydtQ8bGG.webp')
-        
-    else:
-        return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(query_url)
+            else:
+                return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(query_url)
+
+        elif platform is Platform.ANYTHING_ELSE:
+            audio_content_type = await get_audio_content_type(query_url, platform)
+
+            if audio_content_type is AudioContentType.YT_DLP:
+                return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(query_url)
+            else:
+                parsed_url = urlparse(query_url)
+                song_name = os.path.basename(parsed_url.path)
+                
+                return MusicInformation(query_url, song_name, "unkown", 'https://i.giphy.com/LNOZoHMI16ydtQ8bGG.webp')
+            
+        else:
+            return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(query_url)
+    except Exception as e:
+        # Only log serious errors, skip common "not found" errors
+        if "No results found" not in str(e) and "list index out of range" not in str(e):
+            print(f"Error getting streaming URL for {query_url}: {e}")
+        raise e
 
 async def get_urls(query: str) -> List[str]:
     platform = await find_platform(query)
@@ -72,25 +77,37 @@ async def get_urls(query: str) -> List[str]:
     # TikTok
     elif audio_content_type is Platform.TIK_TOK:
         return [query]
-
+    
     elif audio_content_type is AudioContentType.QUERY:
+        # Try YouTube Music first
         try:
             yt = ytmusicapi.YTMusic()
-            video_id = yt.search(query)[0]["videoId"]
-            yt_music_url = f"https://music.youtube.com/watch?v={video_id}"
-            return [yt_music_url]
-        except:
-            ydl_opts = {
-            'quiet': True,
-            'skip_download': True,
-            'noplaylist': True,
-            }
+            search_results = yt.search(query, filter="songs")
+            if search_results and len(search_results) > 0:
+                video_id = search_results[0]["videoId"]
+                yt_music_url = f"https://music.youtube.com/watch?v={video_id}"
+                return [yt_music_url]
+            else:
+                raise Exception("No results found on YouTube Music")
+        except Exception:
+            # Fall back to regular YouTube search
+            try:
+                ydl_opts = {
+                    'quiet': True,
+                    'skip_download': True,
+                    'noplaylist': True,
+                }
 
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                search_results = ydl.extract_info(f"ytsearch:{query}", download=False)
-                if search_results and "entries" in search_results and len(search_results["entries"]) > 0:
-                    video_url = f"https://www.youtube.com/watch?v={search_results['entries'][0]['id']}"
-                    return [video_url]
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    search_results = ydl.extract_info(f"ytsearch:{query}", download=False)
+                    if search_results and "entries" in search_results and len(search_results["entries"]) > 0:
+                        video_url = f"https://www.youtube.com/watch?v={search_results['entries'][0]['id']}"
+                        return [video_url]
+                    else:
+                        raise Exception("No results found on YouTube")
+            except Exception:
+                print(f"Could not find: {query}")
+                return []
     
     elif audio_content_type is AudioContentType.SINGLE_SONG:
         return [query]
