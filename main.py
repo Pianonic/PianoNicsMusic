@@ -3,6 +3,7 @@ import base64
 import io
 import json
 import os
+import sys
 
 # Third-party imports
 import discord
@@ -18,6 +19,7 @@ import db_utils.db_utils as db_utils
 from discord_utils import embed_generator, player
 from ai_server_utils import rvc_server_checker
 from platform_handlers import music_url_getter
+from utils import get_version, get_full_version_info, get_version_info
 load_dotenv()
 
 model_choices = []
@@ -60,38 +62,70 @@ async def on_ready():
 
 @bot.command(aliases=['next', 'advance', 'skip_song', 'move_on', 'play_next'])
 async def skip(ctx):
-    voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    try:
+        voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
 
-    if voice_client:
-        voice_client.stop()
-    
-        if ctx.message:
-            await ctx.message.add_reaction("⏭️")
+        if voice_client:
+            voice_client.stop()
+        
+            if ctx.message:
+                await ctx.message.add_reaction("⏭️")
+            else:
+                await ctx.respond("Skipped Song ⏭️")
         else:
-            await ctx.respond("Skipped Song ⏭️")
-    else:
-        if ctx.message:
-            await ctx.send("❗ Bot is not connected to a Voice channel")
-        else:
-            await ctx.respond("❗ Bot is not connected to a Voice channel")
+            if ctx.message:
+                await ctx.send("❗ Bot is not connected to a Voice channel")
+            else:
+                await ctx.respond("❗ Bot is not connected to a Voice channel")
+    except Exception as e:
+        print(f"Error in skip command: {e}")
+        try:
+            if ctx.message:
+                await ctx.send("❗ An error occurred while skipping")
+            else:
+                await ctx.respond("❗ An error occurred while skipping")
+        except:
+            pass
 
 @bot.command(aliases=['exit', 'quit', 'bye', 'farewell', 'goodbye', 'leave_now', 'disconnect', 'stop_playing'])
 async def leave(ctx):
-    voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    try:
+        voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
 
-    if voice_client:
-        await db_utils.delete_queue(ctx.guild.id)
-        voice_client.stop()
-    
-        if ctx.message:
-            await ctx.message.add_reaction("👋")
+        if voice_client:
+            try:
+                await db_utils.delete_queue(ctx.guild.id)
+            except Exception as e:
+                print(f"Error deleting queue: {e}")
+            
+            try:
+                voice_client.stop()
+            except Exception as e:
+                print(f"Error stopping voice client: {e}")
+            
+            try:
+                await voice_client.disconnect()
+            except Exception as e:
+                print(f"Error disconnecting voice client: {e}")
+        
+            if ctx.message:
+                await ctx.message.add_reaction("👋")
+            else:
+                await ctx.respond("Left the channel 👋")
         else:
-            await ctx.respond("Left the channel 👋")
-    else:
-        if ctx.message:
-            await ctx.send("❗ Bot is not connected to a Voice channel")
-        else:
-            await ctx.respond("❗ Bot is not connected to a Voice channel")
+            if ctx.message:
+                await ctx.send("❗ Bot is not connected to a Voice channel")
+            else:
+                await ctx.respond("❗ Bot is not connected to a Voice channel")
+    except Exception as e:
+        print(f"Error in leave command: {e}")
+        try:
+            if ctx.message:
+                await ctx.send("❗ An error occurred while leaving")
+            else:
+                await ctx.respond("❗ An error occurred while leaving")
+        except:
+            pass
     
 @bot.command(aliases=['hold', 'freeze', 'break', 'wait', 'intermission'])
 async def pause(ctx):
@@ -220,7 +254,7 @@ async def ping(ctx):
     else:
         await ctx.respond(f'Pong! Latency is {latency}ms')
 
-@bot.command(aliases=['h', 'commands', 'command', 'cmds', 'cmd', 'info', 'information', 'assist', 'assistme', 'helpme', 'helppls', 'helpmepls', 'helpmeplease', 'helpmeout', 'helpmeoutpls', 'helpmeoutplease'])
+@bot.command(aliases=['h', 'commands', 'command', 'cmds', 'cmd', 'info', 'assist', 'assistme', 'helpme', 'helppls', 'helpmepls', 'helpmeplease', 'helpmeout', 'helpmeoutpls', 'helpmeoutplease'])
 async def help(ctx):
     embed = discord.Embed(
         title="Bot Commands",
@@ -235,17 +269,17 @@ async def help(ctx):
         ("loop", "Toggles looping of the queue"),
         ("ping", "Checks the bot's latency"),
         ("pause", "Pauses the currently playing audio"),
-        ("resume", "Resumes the currently paused audio"),
-        ("force_play", "Force plays the provided audio"),
-        ("play", "Plays the provided audio"),
-        ("shuffle", "Shuffles the current music queue"),
+        ("resume", "Resumes the currently paused audio"),        ("force_play", "Force plays the provided audio"),
+        ("play", "Plays the provided audio"),        ("shuffle", "Shuffles the current music queue"),
+        ("information", "Shows bot information and version"),
+        ("bot_status", "Shows current bot and queue status"),
         #("play_with_ai_voice", "Plays the provided audio with custom AI voice")
     ]
 
     for name, description in commands_list:
         embed.add_field(name=f"/{name}", value=description, inline=False)
 
-    embed.set_footer(text="PianoNics-Music, created by the one and only PianoNic")
+    embed.set_footer(text=get_full_version_info())
 
     if ctx.message:
         await ctx.send(embed=embed)
@@ -278,36 +312,118 @@ async def play_command(ctx: discord.ApplicationContext, *, query=None):
     else:
         await db_utils.create_new_guild(ctx.guild.id)
         await ctx.author.voice.channel.connect()
-    
-    while True:
-        url = await db_utils.get_queue_entry(ctx.guild.id)
+    try:
+        while True:
+            url = await db_utils.get_queue_entry(ctx.guild.id)
 
-        if not url:
-            break
+            if not url:
+                break
 
-        await player.play(ctx, url)   
-
-    voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-
-    if voice_client:
-        await voice_client.disconnect()
+            try:
+                await player.play(ctx, url)
+            except Exception as e:
+                print(f"Error playing song {url}: {e}")
+                # Send error message to user and continue with next song
+                try:
+                    error_embed = await embed_generator.create_embed("Error", f"Failed to play a song. Skipping to next...")
+                    if ctx.message:
+                        await ctx.send(embed=error_embed)
+                    else:
+                        await ctx.respond(embed=error_embed)
+                except:
+                    pass  # If we can't send the error message, continue anyway
+                continue  # Continue to next song instead of breaking
+                
+    except Exception as e:
+        print(f"Critical error in play loop: {e}")
+    finally:
+        # Always cleanup, even if there was an error
+        voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         
-    await db_utils.delete_guild(ctx.guild.id)
+        if voice_client:
+            try:
+                await voice_client.disconnect()
+            except:
+                pass  # Ignore disconnect errors
+            
+        try:
+            await db_utils.delete_guild(ctx.guild.id)
+        except Exception as e:
+            print(f"Error cleaning up guild data: {e}")
 
-@bot.command(name="version", aliases=['v', 'ver'])
-async def version(ctx):
-    if ctx.message:
-        await ctx.send("1.0.0")
-    else:
-        await ctx.respond("1.0.0")
+@bot.command(name="information", aliases=['v', 'ver', 'version'])
+async def information(ctx):
+    try:
+        version_info = get_version_info()
+        version_embed = discord.Embed(
+            title="🤖 Bot Version Information",
+            color=0x282841
+        )
+        
+        version_embed.add_field(
+            name="Current Version", 
+            value=f"`{version_info['version']}`", 
+            inline=True
+        )
+        
+        version_embed.add_field(
+            name="Release Date", 
+            value=f"`{version_info['release_date']}`", 
+            inline=True
+        )
+        
+        version_embed.add_field(
+            name="Created By", 
+            value=f"{version_info['author']}", 
+            inline=True
+        )
+        
+        version_embed.add_field(
+            name="Python Version", 
+            value=f"`{sys.version.split()[0]}`", 
+            inline=True
+        )
+        
+        version_embed.add_field(
+            name="Discord.py Version", 
+            value=f"`{discord.__version__}`", 
+            inline=True
+        )
+        
+        version_embed.add_field(
+            name="📊 Bot Statistics", 
+            value=f"Servers: `{len(bot.guilds)}`\nLatency: `{round(bot.latency * 1000)}ms`", 
+            inline=True
+        )
+        
+        # Add some feature highlights
+        version_embed.add_field(
+            name="🎵 Features", 
+            value="• Multi-platform music support\n• Queue management\n• Loop & Shuffle modes\n• Enhanced error handling\n• Persistent database\n• Real-time status monitoring", 
+            inline=False
+        )
+        
+        version_embed.set_footer(text=get_full_version_info())
+        
+        if ctx.message:
+            await ctx.send(embed=version_embed)
+        else:
+            await ctx.respond(embed=version_embed)
+    except Exception as e:
+        print(f"Error in version command: {e}")
+        # Fallback to simple version display
+        if ctx.message:
+            await ctx.send(f"PianoNics-Music v{get_version()}")
+        else:
+            await ctx.respond(f"PianoNics-Music v{get_version()}")
 
 ###################################################
 ################# SLASH COMMANDS ##################
 ###################################################
 
-@bot.slash_command(name="version", description="Gets the Bot version")
-async def version_slash(ctx):
-    await version(ctx)
+@bot.slash_command(name="information", description="Gets the Bot information")
+async def information_slash(ctx):
+    await information(ctx)
 
 @bot.slash_command(name="skip", description="Skips the currently playing audio")
 async def skip_slash(ctx):
@@ -370,6 +486,10 @@ async def force_play_slash(ctx, query: str, insta_skip: str = "false"):
 @bot.slash_command(name="help", description="Shows all available commands")
 async def help_slash(ctx):
     await help(ctx)
+
+@bot.slash_command(name="bot_status", description="Shows current bot and queue status")
+async def bot_status_slash(ctx):
+    await bot_status(ctx)
 
 @bot.slash_command(name="play", description="Plays the provided audio", options=[Option(name="query", required=True)])
 async def play_slash(ctx, query: str):
@@ -455,5 +575,78 @@ async def play_slash(ctx, query: str):
 #                     break
 
 #         print("finished")
+
+@bot.command(aliases=['status', 'current', 'now_playing'])
+async def bot_status(ctx):
+    try:
+        voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        guild = await db_utils.get_guild(ctx.guild.id)
+        
+        status_embed = discord.Embed(
+            title="🎵 Bot Status",
+            color=0x282841
+        )
+        
+        # Voice connection status
+        if voice_client and voice_client.is_connected():
+            channel_name = voice_client.channel.name if voice_client.channel else "Unknown"
+            status_embed.add_field(
+                name="🔊 Voice Status", 
+                value=f"Connected to: `{channel_name}`", 
+                inline=True
+            )
+            
+            # Playing status
+            if voice_client.is_playing():
+                status_embed.add_field(name="▶️ Playback", value="Playing", inline=True)
+            elif voice_client.is_paused():
+                status_embed.add_field(name="⏸️ Playback", value="Paused", inline=True)
+            else:
+                status_embed.add_field(name="⏹️ Playback", value="Stopped", inline=True)
+        else:
+            status_embed.add_field(name="🔇 Voice Status", value="Not connected", inline=True)
+            status_embed.add_field(name="⏹️ Playback", value="Inactive", inline=True)
+        
+        # Queue information
+        if guild:
+            queue_count = len([entry for entry in guild.queue if not entry.already_played])
+            total_queue = len(guild.queue)
+            
+            status_embed.add_field(
+                name="📝 Queue", 
+                value=f"{queue_count} remaining / {total_queue} total", 
+                inline=True
+            )
+            
+            # Loop and shuffle status
+            loop_status = "🔄 On" if guild.loop_queue else "⏹️ Off"
+            shuffle_status = "🔀 On" if guild.shuffle_queue else "➡️ Off"
+            
+            status_embed.add_field(name="Loop", value=loop_status, inline=True)
+            status_embed.add_field(name="Shuffle", value=shuffle_status, inline=True)
+        else:
+            status_embed.add_field(name="📝 Queue", value="No active session", inline=True)
+            status_embed.add_field(name="Loop", value="⏹️ Off", inline=True)
+            status_embed.add_field(name="Shuffle", value="➡️ Off", inline=True)
+          # Server info
+        latency = round(bot.latency * 1000)
+        status_embed.add_field(name="📡 Latency", value=f"{latency}ms", inline=True)
+        
+        status_embed.set_footer(text=get_full_version_info())
+        
+        if ctx.message:
+            await ctx.send(embed=status_embed)
+        else:
+            await ctx.respond(embed=status_embed)
+            
+    except Exception as e:
+        print(f"Error in status command: {e}")
+        try:
+            if ctx.message:
+                await ctx.send("❗ An error occurred while getting status")
+            else:
+                await ctx.respond("❗ An error occurred while getting status")
+        except:
+            pass
 
 bot.run(os.getenv('DISCORD_TOKEN'))
