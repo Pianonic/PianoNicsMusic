@@ -1,5 +1,5 @@
-# Use Python 3.10-slim as the base image
-FROM python:3.14-slim
+# Use Python 3.13-slim as the base image
+FROM python:3.13-slim
 
 # Install FFmpeg and other dependencies
 RUN apt-get update && apt-get install -y ffmpeg
