@@ -59,8 +59,7 @@ async def on_ready():
             try:
                 await msg.delete()
             except:
-                if verbose_logging:
-                    print("skiped message")
+                print("skipped message")
 
         await user.send(f"Bot is ready and logged in as {bot.user.name}")
 
@@ -315,7 +314,37 @@ async def play_command(ctx: discord.ApplicationContext, *, query=None):
         return
     else:
         await db_utils.create_new_guild(ctx.guild.id)
-        await ctx.author.voice.channel.connect()
+        
+        # Enhanced voice connection with error handling
+        try:
+            if not ctx.author.voice or not ctx.author.voice.channel:
+                error_msg = "❗ You must be in a voice channel to use this command!"
+                if ctx.message:
+                    await ctx.send(error_msg)
+                else:
+                    await ctx.respond(error_msg)
+                return
+            
+            await ctx.author.voice.channel.connect()
+            print(f"Successfully connected to voice channel: {ctx.author.voice.channel.name}")
+            
+        except discord.errors.ClientException as e:
+            error_msg = "❗ Failed to connect to voice channel. The bot might already be connected elsewhere."
+            print(f"Voice connection error: {e}")
+            if ctx.message:
+                await ctx.send(error_msg)
+            else:
+                await ctx.respond(error_msg)
+            return
+            
+        except Exception as e:
+            error_msg = "❗ An error occurred while connecting to the voice channel. Please try again."
+            print(f"Unexpected voice connection error: {e}")
+            if ctx.message:
+                await ctx.send(error_msg)
+            else:
+                await ctx.respond(error_msg)
+            return
     try:
         while True:
             url = await db_utils.get_queue_entry(ctx.guild.id)

@@ -5,6 +5,19 @@ All notable changes to PianoNics-Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-07-03
+
+### Fixed
+- 🐛 **Voice Connection Error**: Improved error handling for voice channel connection failures
+- 🔇 **Bot Responsiveness**: Fixed issues where bot becomes unresponsive after voice connection errors
+- 🛡️ **Error Recovery**: Enhanced error recovery mechanisms in play command
+- 📤 **User Feedback**: Improved error reporting to users when connection fails
+
+### Technical Improvements
+- 🔄 **Exception Handling**: Added better exception handling in voice connection flow
+- 🧹 **Resource Cleanup**: Improved cleanup of voice resources on connection failures
+- 📝 **Error Logging**: Enhanced error logging for debugging voice connection issues
+
 ## [1.2.0] - 2025-06-12
 
 ### Added

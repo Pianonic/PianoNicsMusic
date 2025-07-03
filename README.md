@@ -12,7 +12,7 @@
   <a><img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FPianonic%2FPianoNicsMusic&count_bg=%232c234a&title_bg=%23555555&icon=discord.svg&icon_color=%23E7E7E7&title=Visits&edge_flat=false"/></a>
   <a href="https://github.com/Pianonic/PianoNicsMusic/blob/main/LICENSE.md"><img src="https://img.shields.io/badge/License-CC%20BY--NC%204.0-2c234a.svg"/></a>
   <a href="https://github.com/Pianonic/PianoNicsMusic?tab=readme-ov-file#-installation--setup"><img src="https://img.shields.io/badge/Selfhost-Instructions-2c234a.svg"/></a>
-  <a><img src="https://img.shields.io/badge/Version-1.2.0-2c234a.svg"/></a>
+  <a><img src="https://img.shields.io/badge/Version-1.2.1-2c234a.svg"/></a>
   <a><img src="https://img.shields.io/badge/Python-3.8+-2c234a.svg"/></a>
 </p>
 
