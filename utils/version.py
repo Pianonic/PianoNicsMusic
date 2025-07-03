@@ -1,5 +1,5 @@
 # Bot version information
-BOT_VERSION = "1.2.1"
+BOT_VERSION = "1.2.3"
 BOT_NAME = "PianoNics-Music"
 BOT_AUTHOR = "PianoNic"
 BOT_RELEASE_DATE = "2025-07-03"

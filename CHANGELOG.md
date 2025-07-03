@@ -5,6 +5,23 @@ All notable changes to PianoNics-Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2025-07-03
+
+### Fixed
+- 🎯 **YouTube Error Display**: Fixed issue where specific YouTube error messages (age-restricted, private videos, etc.) were being overwritten by generic error messages
+- 📺 **Video Error Persistence**: YouTube-specific error messages now stay displayed in Discord instead of being replaced with "An error occurred while playing this song"
+- 🛡️ **Error Message Accuracy**: Users now see the actual reason why a video cannot be played (age restrictions, privacy settings, geo-blocking, etc.)
+
+### Technical Improvements
+- 🔧 **Exception Handling Order**: Improved exception handling hierarchy in player.py to catch YouTubeError before generic Exception
+- 📝 **Error Preservation**: Modified error handling to preserve specific error messages that have already been set
+- 🎵 **Player Robustness**: Enhanced audio player error handling without breaking existing functionality
+
+## [1.2.2] - 2025-07-03
+
+### Fixed
+- 🔄 **Maintenance Release**: Internal improvements and code cleanup
+
 ## [1.2.1] - 2025-07-03
 
 ### Fixed

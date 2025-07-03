@@ -14,6 +14,7 @@ from enums.audio_content_type import AudioContentType
 from enums.platform import Platform
 import yt_dlp
 import ytmusicapi
+from ddl_retrievers.universal_ddl_retriever import YouTubeError
 
 from spotipy import SpotifyClientCredentials
 import spotipy
@@ -46,8 +47,7 @@ async def get_streaming_url(query_url: str) -> MusicInformation:
                 return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(href)
             
             else:
-                return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(query_url)
-
+                return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(query_url)        
         elif platform is Platform.ANYTHING_ELSE:
             audio_content_type = await get_audio_content_type(query_url, platform)
 
@@ -58,9 +58,12 @@ async def get_streaming_url(query_url: str) -> MusicInformation:
                 song_name = os.path.basename(parsed_url.path)
                 
                 return MusicInformation(query_url, song_name, "unkown", 'https://i.giphy.com/LNOZoHMI16ydtQ8bGG.webp')
-            
+        
         else:
             return await ddl_retrievers.universal_ddl_retriever.get_streaming_url(query_url)
+    except YouTubeError as e:
+        # Re-raise YouTube-specific errors with user-friendly messages
+        raise e
     except Exception as e:
         # Only log serious errors, skip common "not found" errors
         if "No results found" not in str(e) and "list index out of range" not in str(e):
