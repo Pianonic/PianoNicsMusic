@@ -24,17 +24,3 @@ jobs:
     - name: Run tests
       id: tests
       run: python -m unittest discover -s tests
-
-    - name: Notify Discord on success
-      if: success()
-      uses: rjstone/discord-webhook-notify@v1
-      with:
-        webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
-        text: "✅ CI pipeline completed successfully!"
-
-    - name: Notify Discord on failure
-      if: failure()
-      uses: rjstone/discord-webhook-notify@v1
-      with:
-        webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
-        text: "❌ CI pipeline failed. Please check the logs for details."
