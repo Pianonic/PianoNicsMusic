@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Run tests
+      id: tests
+      run: python -m unittest discover -s tests
+
+    - name: Notify Discord on success
+      if: success()
+      uses: rjstone/discord-webhook-notify@v1
+      with:
+        webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+        text: "✅ CI pipeline completed successfully!"
+
+    - name: Notify Discord on failure
+      if: failure()
+      uses: rjstone/discord-webhook-notify@v1
+      with:
+        webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+        text: "❌ CI pipeline failed. Please check the logs for details."
