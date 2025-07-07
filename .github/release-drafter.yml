@@ -16,12 +16,6 @@ categories:
     labels:
       - '🏗 refactor'
 
-include-labels:
-  - '🚀 feature'
-  - '✨ enhancement'
-  - '🐛 bug'
-  - '🏗 refactor'
-
 change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 change-title-escapes: '\<*_&'
 
