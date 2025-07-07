@@ -1,0 +1,34 @@
+# Release Drafter config for PianoNicsMusic
+name-template: 'v$NEXT_PATCH_VERSION'
+tag-template: 'v$NEXT_PATCH_VERSION'
+
+categories:
+  - title: '🚀 Features'
+    labels:
+      - 'feature'
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'bug'
+  - title: '🧰 Enhancements'
+    labels:
+      - 'enhancement'
+
+change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
+no-changes-template: 'No changes.'
+
+exclude-labels:
+  - 'skip-changelog'
+
+version-resolver:
+  major:
+    labels:
+      - 'breaking'
+  minor:
+    labels:
+      - 'feature'
+  patch:
+    labels:
+      - 'bug'
+      - 'enhancement'
+
+# Optionally, customize more: https://github.com/release-drafter/release-drafter#configuration
