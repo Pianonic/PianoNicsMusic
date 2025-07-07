@@ -5,16 +5,13 @@ tag-template: 'v$RESOLVED_VERSION'
 categories:
   - title: '🚀 Features'
     labels:
-      - '🚀 feature'
+      - 'feature'
   - title: '✨ enhancement'
     labels:
-      - '✨ enhancement'
+      - 'enhancement'
   - title: '🐛 Bug Fixes'
     labels:
-      - '🐛 bug'
-  - title: '🏗 Refactoring'
-    labels:
-      - '🏗 refactor'
+      - 'bug'
 
 change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 change-title-escapes: '\<*_&'
@@ -26,12 +23,11 @@ version-resolver:
       - 'breaking'
   minor:
     labels:
-      - '🚀 feature'
-      - '✨ enhancement'
+      - 'feature'
+      - 'enhancement'
   patch:
     labels:
-      - '🐛 bug'
-      - '🏗 refactor'
+      - 'bug'
   default: patch
 
 template: |
