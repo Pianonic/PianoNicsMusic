@@ -11,8 +11,8 @@
 <p align="center">
   <a href="https://github.com/Pianonic/PianoNicsMusic"><img src="https://badgetrack.pianonic.ch/badge?url=https://github.com/Pianonic/PianoNicsMusic&label=Visits&color=2c234a&style=flat&logo=github" alt="Visitor Count"/></a>
   <a href="https://github.com/Pianonic/PianoNicsMusic/blob/main/LICENSE.md"><img src="https://img.shields.io/badge/License-CC%20BY--NC%204.0-2c234a.svg"/></a>
-  <a href="https://github.com/Pianonic/PianoNicsMusic?tab=readme-ov-file#-installation--setup"><img src="https://img.shields.io/badge/Selfhost-Instructions-2c234a.svg"/></a>
-  <a href="https://github.com/Pianonic/PianoNicsMusic/releases/latest"><img src="https://img.shields.io/github/v/release/Pianonic/PianoNicsMusic?label=Version&color=2c234a.svg" alt="Latest Release"/></a>
+  <a href="https://hub.docker.com/r/pianonic/pianonicsmusic"><img src="https://img.shields.io/badge/Docker_Hub-pianonic/pianonicsmusic-2c234a.svg?logo=docker"/></a>
+  <a href="https://github.com/Pianonic/PianoNicsMusic/pkgs/container/pianonicsmusic"><img src="https://img.shields.io/badge/GitHub-ghcr.io-2c234a.svg?logo=github"/></a>
   <a><img src="https://img.shields.io/badge/Python-3.8+-2c234a.svg"/></a>
 </p>
 
@@ -33,235 +33,160 @@ PianoNic's Music Bot is a versatile Discord bot designed to elevate the music ex
 -   **📊 Status Monitoring:** Real-time bot status and queue information commands.
 -   **🔄 Version Management:** Built-in versioning system with detailed release information.
 
-## 📦 Installation & Setup
+## 🚀 Getting Started (Setup in 3 Steps)
 
-### 1. Clone the Repository
+Follow these steps to get your bot up and running.
 
-```sh
-git clone https://github.com/Pianonic/PianoNicsMusic.git
-cd PianoNicsMusic
-```
+### Step 1: Create Your Discord Bot
 
-### 2. Install Dependencies
+Before you can run the code, you need to create a "Bot Application" in Discord.
 
-```sh
-pip install -r requirements.txt
-```
+1.  Go to the [Discord Developer Portal](https://discord.com/developers/applications) and log in.
+2.  Click **"New Application"** and give it a name (e.g., "My Music Bot").
+3.  Go to the **"Bot"** tab on the left menu.
+4.  Click **"Reset Token"** and then **"Yes, do it!"**.
+5.  **Copy the token!** This is your `DISCORD_TOKEN`. Keep it safe.
+6.  Go to the **"OAuth2" -> "URL Generator"** tab.
+7.  Select the `bot` and `applications.commands` scopes.
+8.  In the "Bot Permissions" box that appears, select **"Connect"** and **"Speak"**.
+9.  Copy the generated URL at the bottom, paste it into your browser, and invite the bot to your server.
 
-### 3. Configure the Bot
+### Step 2: Get the Necessary Files
 
-Create a `.env` file in the root directory with the following content:
+You don't need to clone the whole repository to run the bot. You only need two files.
+
+1.  Create a new folder on your computer (e.g., `my-music-bot`).
+2.  Download the [`docker-compose.yml`](https://raw.githubusercontent.com/Pianonic/PianoNicsMusic/main/docker-compose.yml) file into that folder.
+    *   *Right-click the link and "Save Link As..."*
+
+### Step 3: Configure Your Bot
+
+In the same folder, create a file named `.env` and add your credentials.
 
 ```properties
+# Paste the bot token you copied from the Discord Developer Portal
 DISCORD_TOKEN=YOUR_DISCORD_TOKEN
+
+# These are optional, but make Spotify links load 60% faster!
+# Get them from https://developer.spotify.com/dashboard
 SPOTIFY_CLIENT_ID=YOUR_SPOTIFY_CLIENT_ID
 SPOTIFY_CLIENT_SECRET=YOUR_SPOTIFY_CLIENT_SECRET
 ```
 
-To get your Spotify credentials, visit the [Spotify Developer Dashboard](https://developer.spotify.com/documentation/web-api/concepts/apps) to create an application.
+> **Note:** The bot works without Spotify credentials, but they are recommended for the best performance with Spotify links.
 
-> **Note:** Providing Spotify credentials is **optional**. The bot will still function without them. However, when credentials are provided, the bot will load Spotify songs **60% faster**, as it can directly access Spotify's API for optimized track info retrieval.
+## 📦 Installation & Running the Bot
 
-### 4. Run the Bot
+Choose one of the two methods below. Docker is the easiest and highly recommended.
 
-```sh
-python main.py
-```
+### Option 1: Docker Setup (Easiest Method)
 
-## 🐳 Docker Setup
+This method uses pre-built images from Docker Hub or GitHub, so you don't have to build anything. It's the fastest way to get started.
 
-### Building and Running Locally (Docker)
+1.  **Make sure you have Docker and Docker Compose installed.**
+2.  Open the `docker-compose.yml` file you downloaded. It's already configured to pull the latest image. By default, it uses the image from Docker Hub:
 
-These steps will build the Docker image from your local `Dockerfile` and run it.
-
-1.  **Build the Docker Image:**
-
-    ```sh
-    docker build -t pianonic-music-bot .
+    ```yaml
+    services:
+      pianonic-music-bot:
+        # Pulls the latest image from Docker Hub
+        image: pianonic/pianonicsmusic:latest
+        # To use the GitHub image instead, comment the line above and uncomment this one:
+        # image: ghcr.io/pianonic/pianonicsmusic:latest
+        container_name: pianonic-music-bot
+        env_file: .env
+        restart: unless-stopped
     ```
 
-2.  **Run the Docker Container:**
+3.  **Run the bot with one command:**
 
     ```sh
-    docker run -d --name pianonic-music-bot pianonic-music-bot
+    docker-compose up -d
     ```
 
-### Using Docker Compose (Local Build)
+Docker will automatically download the latest version of the bot and run it in the background. Your bot is now online!
 
-This method simplifies managing the bot's Docker container, building the image from your local source.
+<details>
+<summary><strong>Advanced: Building the Docker Image from Source</strong></summary>
 
-Create a `docker-compose.yml` for simplified container management:
+If you have cloned the full repository and made changes to the source code, you'll need to build the image yourself.
 
-```yaml
-services:
-  pianonic-music-bot:
-    build:
-      context: .
-    container_name: pianonic-music-bot
-    environment:
-      - DISCORD_TOKEN=${DISCORD_TOKEN}
-      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
-      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
-    restart: unless-stopped
-```
-
-Then, run it with:
-
-```sh
-docker-compose up --build -d
-```
-
-### Using Pre-built Images from a Registry (Recommended for Deployment)
-
-For easier deployment and distribution, you can publish your Docker image to a container registry (like Docker Hub or GitHub Container Registry) and then pull it directly.
-
-#### Step 1: Publish Your Docker Image (One-Time Setup)
-
-Choose one of the following methods to publish your image. *Replace placeholders like `YOUR_GITHUB_USERNAME` with your actual GitHub username.*
-
-**A. Publishing to Docker Hub:**
-
-1.  **Log in to Docker Hub:**
+1.  Clone the repository: `git clone https://github.com/Pianonic/PianoNicsMusic.git`
+2.  Navigate into the directory: `cd PianoNicsMusic`
+3.  Modify the `docker-compose.yml` to use the `build` command instead of `image`:
+    ```yaml
+    services:
+      pianonic-music-bot:
+        build:
+          context: .
+        container_name: pianonic-music-bot
+        env_file: .env
+        restart: unless-stopped
+    ```
+4.  Build and run your custom version:
     ```sh
-    docker login
+    docker-compose up --build -d
     ```
-    (Enter your Docker Hub username and password when prompted.)
 
-2.  **Tag your locally built image:**
+</details>
+
+### Option 2: Standard Python Setup (Manual)
+
+Use this method if you prefer not to use Docker.
+
+1.  **Clone the full repository:**
     ```sh
-    docker tag pianonic-music-bot:latest pianonic/pianonicsmusic:latest
+    git clone https://github.com/Pianonic/PianoNicsMusic.git
+    cd PianoNicsMusic
     ```
-
-3.  **Push the image to Docker Hub:**
+2.  **Make sure you have Python 3.8+ installed.**
+3.  **Install the required libraries:**
     ```sh
-    docker push pianonic/pianonicsmusic:latest
+    pip install -r requirements.txt
     ```
-
-**B. Publishing to GitHub Container Registry (GHCR):**
-
-1.  **Generate a Personal Access Token (PAT):**
-    *   Go to GitHub > Settings > Developer settings > Personal access tokens > Tokens (classic).
-    *   Click "Generate new token".
-    *   Ensure the `write:packages` scope is selected (this is crucial for pushing images).
-    *   Copy the generated token immediately, as you won't see it again.
-
-2.  **Log in to GHCR:**
+4.  **Run the bot:**
     ```sh
-    echo YOUR_GITHUB_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+    python main.py
     ```
 
-3.  **Tag your locally built image:**
-    Tag it with the GHCR format:
-    ```sh
-    docker tag pianonic-music-bot:latest ghcr.io/pianonic/pianonicsmusic:latest
-    ```
+## 🎧 Usage: How to Use Commands
 
-4.  **Push the image to GHCR:**
-    ```sh
-    docker push ghcr.io/pianonic/pianonicsmusic:latest
-    ```
+Control the bot with simple commands in your server's text channels.
 
-#### Step 2: Update `docker-compose.yml` to Pull from Registry
+### 🎵 Music Playback
 
-Once your image is published, modify your `docker-compose.yml` to use the `image` directive instead of `build`.
+| Command | Aliases | Description | Example |
+| :--- | :--- | :--- | :--- |
+| `play` | `p`, `add` | Plays a song or adds it to the queue. | `play Never Gonna Give You Up` |
+| `pause` | `hold` | Pauses the currently playing song. | `pause` |
+| `resume` | `unpause` | Resumes playback if paused. | `resume` |
+| `force_play` | `fp` | Plays a song immediately after the current one finishes. | `force_play My Favorite Song` |
 
-**Option 1: Using Docker Hub Image**
+### 🇶 Queue Management
 
-```yaml
-services:
-  pianonic-music-bot:
-    image: pianonic/pianonicsmusic:latest # Image pulled from Docker Hub
-    container_name: pianonic-music-bot
-    environment:
-      - DISCORD_TOKEN=${DISCORD_TOKEN}
-      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
-      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
-    restart: unless-stopped
-```
+| Command | Aliases | Description | Example |
+| :--- | :--- | :--- | :--- |
+| `skip` | `next` | Skips the current song and plays the next in queue. | `skip` |
+| `stop` | `leave` | Stops the music, clears the queue, and disconnects the bot. | `stop` |
+| `loop` | `repeat` | Toggles looping for the entire queue. | `loop` |
+| `shuffle` | | Toggles shuffle mode, randomizing the queue order. | `shuffle` |
+| `bot_status` | `status`, `np` | Shows the current song and the upcoming queue. | `bot_status` |
 
-**Option 2: Using GitHub Container Registry (GHCR) Image**
+### 🤖 General Commands
 
-```yaml
-services:
-  pianonic-music-bot:
-    image: ghcr.io/pianonic/pianonicsmusic:latest # Image pulled from GitHub Container Registry
-    container_name: pianonic-music-bot
-    environment:
-      - DISCORD_TOKEN=${DISCORD_TOKEN}
-      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
-      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
-    restart: unless-stopped
-```
+| Command | Aliases | Description | Example |
+| :--- | :--- | :--- | :--- |
+| `help` | `h`, `commands` | Shows a list of all available commands. | `help` |
+| `ping` | | Checks the bot's response time to Discord. | `ping` |
+| `information` | `v`, `version` | Displays the bot's version and system info. | `information` |
 
-**Run with the updated Compose file:**
-
-```sh
-docker-compose up -d
-```
-Docker Compose will now pull the specified image from the registry and run it.
-
-## 🚀 Usage
-
-### 🎵 Basic Commands
-
--   **▶️ Playing Music:** Use the `play` command followed by the song name, URL, or file path to queue music.
--   **🎤 AI Voice Music:** Activate the AI voice feature for a unique music playback experience. (In development)
--   **🔀 Managing the Queue:** Use commands to add, remove, or skip tracks in the queue.
-
-### 📋 Available Commands
-
-| Command | Aliases | Description |
-|---------|---------|-------------|
-| `play <query>` | `p`, `pl`, `play_song`, `queue`, `add`, `enqueue` | Play music from URL, search query, or playlist |
-| `skip` | `next`, `advance`, `skip_song`, `move_on`, `play_next` | Skip the currently playing song |
-| `pause` | `hold`, `freeze`, `break`, `wait`, `intermission` | Pause the current song |
-| `resume` | `continue`, `unpause`, `proceed`, `restart`, `go`, `resume_playback` | Resume paused playback |
-| `leave` | `exit`, `quit`, `bye`, `farewell`, `goodbye`, `leave_now`, `disconnect`, `stop_playing` | Leave voice channel and clear queue |
-| `stop` | | Stop playing and leave voice channel (same as leave) |
-| `loop` | `lp`, `repeat`, `cycle`, `toggle_loop`, `toggle_repeat` | Toggle queue looping |
-| `shuffle` | | Toggle queue shuffling |
-| `force_play <query>` | `fp`, `forceplay`, `playforce` | Add song to front of queue (with optional instant skip) |
-| `bot_status` | `status`, `current`, `now_playing` | Show current bot and queue status |
-| `information` | `v`, `ver`, `version` | Display bot version and system information |
-| `help` | `h`, `commands`, `command`, `cmds`, `cmd`, `info`, `assist`, `assistme`, `helpme`, `helppls`, `helpmepls`, `helpmeplease`, `helpmeout`, `helpmeoutpls`, `helpmeoutplease` | Show all available commands |
-| `ping` | | Check bot latency |
-
-### 🎛️ Queue Management
-
-- **Add Songs:** Use `play <song name or URL>` to add songs to the queue
-- **Skip Songs:** Use `skip` to move to the next song
-- **Loop Queue:** Use `loop` to repeat the entire queue
-- **Shuffle Mode:** Use `shuffle` to randomize playback order
-- **Force Play:** Use `force_play <song>` to play a song immediately after the current one
+---
 
 ## 🔧 Troubleshooting
 
-### Common Issues
-
-**Bot gets stuck and won't play the next song:**
-- This has been fixed in v1.2.0 with enhanced error handling
-- Use the `skip` command to force move to the next song
-- Use `bot_status` to check the current queue state
-
-**Bot won't connect to voice channel:**
-- Ensure the bot has proper permissions in your Discord server
-- Make sure you're in a voice channel when using the `play` command
-- Check that the bot has "Connect" and "Speak" permissions
-
-**Songs fail to play:**
-- The bot will automatically skip failed songs and continue with the queue
-- Check your internet connection
-- Some URLs might be region-restricted or unavailable
-
-**Database issues:**
-- The bot now uses a persistent database (`bot_data.db`)
-- If issues persist, you can safely delete this file to reset the bot's state
-
-### Getting Help
-
-- Use the `help` command to see all available commands
-- Use `bot_status` to check the current bot state
-- Use `version` to check your bot version and ensure you have the latest updates
+-   **Bot won't connect to voice channel?** Make sure you invited it with the correct permissions (Step 1.8) and that you are in a voice channel when you use the `play` command.
+-   **Bot is offline?** If using Docker, run `docker-compose ps` to check the container status. If it's not running, check the logs with `docker-compose logs`.
+-   **Songs fail to play?** The bot will automatically skip failed songs. This can happen if a song is region-locked or the source is unavailable.
 
 ## 📄 License
 
