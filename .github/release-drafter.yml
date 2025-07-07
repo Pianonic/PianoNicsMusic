@@ -34,6 +34,9 @@ version-resolver:
       - '🏗 refactor'
   default: patch
 
+footer: |
+  **Full Changelog**: https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
+
 template: |
   ## What's Changed
 
