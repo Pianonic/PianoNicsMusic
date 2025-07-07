@@ -12,7 +12,7 @@
   <a href="https://github.com/Pianonic/PianoNicsMusic"><img src="https://badgetrack.pianonic.ch/badge?url=https://github.com/Pianonic/PianoNicsMusic&label=Visits&color=2c234a&style=flat&logo=github" alt="Visitor Count"/></a>
   <a href="https://github.com/Pianonic/PianoNicsMusic/blob/main/LICENSE.md"><img src="https://img.shields.io/badge/License-CC%20BY--NC%204.0-2c234a.svg"/></a>
   <a href="https://github.com/Pianonic/PianoNicsMusic?tab=readme-ov-file#-installation--setup"><img src="https://img.shields.io/badge/Selfhost-Instructions-2c234a.svg"/></a>
-  <a><img src="https://img.shields.io/badge/Version-1.2.1-2c234a.svg"/></a>
+  <a href="https://github.com/Pianonic/PianoNicsMusic/releases/latest"><img src="https://img.shields.io/github/v/release/Pianonic/PianoNicsMusic?label=Version&color=2c234a.svg" alt="Latest Release"/></a>
   <a><img src="https://img.shields.io/badge/Python-3.8+-2c234a.svg"/></a>
 </p>
 
@@ -70,19 +70,25 @@ python main.py
 
 ## 🐳 Docker Setup
 
-### Build the Docker Image
+### Building and Running Locally (Docker)
 
-```sh
-docker build -t pianonic-music-bot .
-```
+These steps will build the Docker image from your local `Dockerfile` and run it.
 
-### Run the Docker Container
+1.  **Build the Docker Image:**
 
-```sh
-docker run -d --name pianonic-music-bot pianonic-music-bot
-```
+    ```sh
+    docker build -t pianonic-music-bot .
+    ```
 
-### Using Docker Compose (Recommended)
+2.  **Run the Docker Container:**
+
+    ```sh
+    docker run -d --name pianonic-music-bot pianonic-music-bot
+    ```
+
+### Using Docker Compose (Local Build)
+
+This method simplifies managing the bot's Docker container, building the image from your local source.
 
 Create a `docker-compose.yml` for simplified container management:
 
@@ -104,6 +110,89 @@ Then, run it with:
 ```sh
 docker-compose up --build -d
 ```
+
+### Using Pre-built Images from a Registry (Recommended for Deployment)
+
+For easier deployment and distribution, you can publish your Docker image to a container registry (like Docker Hub or GitHub Container Registry) and then pull it directly.
+
+#### Step 1: Publish Your Docker Image (One-Time Setup)
+
+Choose one of the following methods to publish your image. *Replace placeholders like `your_dockerhub_username` and `YOUR_GITHUB_USERNAME` with your actual account details.*
+
+**A. Publishing to Docker Hub:**
+
+1.  **Log in to Docker Hub:**
+    ```sh
+    docker login
+    ```
+2.  **Tag your locally built image:**
+    ```sh
+    docker tag pianonic-music-bot:latest your_dockerhub_username/pianonic-music-bot:latest
+    ```
+3.  **Push the image to Docker Hub:**
+    ```sh
+    docker push your_dockerhub_username/pianonic-music-bot:latest
+    ```
+
+**B. Publishing to GitHub Container Registry (GHCR):**
+
+1.  **Generate a Personal Access Token (PAT):**
+    *   Go to GitHub > Settings > Developer settings > Personal access tokens > Tokens (classic).
+    *   Click "Generate new token".
+    *   Select the `write:packages` scope.
+    *   Copy the generated token.
+2.  **Log in to GHCR:**
+    ```sh
+    echo YOUR_GITHUB_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+    ```
+3.  **Tag your locally built image:**
+    ```sh
+    docker tag pianonic-music-bot:latest ghcr.io/Pianonic/pianonics-music-bot:latest
+    ```
+    *(Adjust `Pianonic` to your actual GitHub username if different, and `pianonics-music-bot` to your preferred image name if desired.)*
+4.  **Push the image to GHCR:**
+    ```sh
+    docker push ghcr.io/Pianonic/pianonics-music-bot:latest
+    ```
+
+#### Step 2: Update `docker-compose.yml` to Pull from Registry
+
+Once your image is published, modify your `docker-compose.yml` to use the `image` directive instead of `build`.
+
+**Option 1: Using Docker Hub Image**
+
+```yaml
+services:
+  pianonic-music-bot:
+    image: your_dockerhub_username/pianonic-music-bot:latest # Replace with your Docker Hub image path
+    container_name: pianonic-music-bot
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+    restart: unless-stopped
+```
+
+**Option 2: Using GitHub Container Registry (GHCR) Image**
+
+```yaml
+services:
+  pianonic-music-bot:
+    image: ghcr.io/Pianonic/pianonics-music-bot:latest # Replace with your GHCR image path
+    container_name: pianonic-music-bot
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+    restart: unless-stopped
+```
+
+**Run with the updated Compose file:**
+
+```sh
+docker-compose up -d
+```
+Docker Compose will now pull the specified image from the registry and run it.
 
 ## 🚀 Usage
 
