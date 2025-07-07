@@ -47,8 +47,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/pianonic-music-bot
-            ghcr.io/${{ toLower(github.repository_owner) }}/pianonic-music-bot
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}
+            ghcr.io/${{ github.repository }}
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
