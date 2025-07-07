@@ -56,7 +56,7 @@ Before you can run the code, you need to create a "Bot Application" in Discord.
 You don't need to clone the whole repository to run the bot. You only need two files.
 
 1.  Create a new folder on your computer (e.g., `my-music-bot`).
-2.  Download the [`docker-compose.yml`](https://raw.githubusercontent.com/Pianonic/PianoNicsMusic/main/docker-compose.yml) file into that folder.
+2.  Download the [`compose.yml`](https://raw.githubusercontent.com/Pianonic/PianoNicsMusic/main/compose.yml) file into that folder.
     *   *Right-click the link and "Save Link As..."*
 
 ### Step 3: Configure Your Bot
@@ -84,7 +84,7 @@ Choose one of the two methods below. Docker is the easiest and highly recommende
 This method uses pre-built images from Docker Hub or GitHub, so you don't have to build anything. It's the fastest way to get started.
 
 1.  **Make sure you have Docker and Docker Compose installed.**
-2.  Open the `docker-compose.yml` file you downloaded. It's already configured to pull the latest image. By default, it uses the image from Docker Hub:
+2.  Open the `compose.yml` file you downloaded. It's already configured to pull the latest image. By default, it uses the image from Docker Hub:
 
     ```yaml
     services:
