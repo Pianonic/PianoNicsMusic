@@ -42,5 +42,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/pianonic-music-bot:latest
+            ghcr.io/${{ github.repository_owner | lower }}/pianonic-music-bot:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/pianonic-music-bot:latest
