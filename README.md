@@ -117,7 +117,7 @@ For easier deployment and distribution, you can publish your Docker image to a c
 
 #### Step 1: Publish Your Docker Image (One-Time Setup)
 
-Choose one of the following methods to publish your image. *Replace placeholders like `your_dockerhub_username` and `YOUR_GITHUB_USERNAME` with your actual account details.*
+Choose one of the following methods to publish your image. *Replace placeholders like `YOUR_GITHUB_USERNAME` with your actual GitHub username.*
 
 **A. Publishing to Docker Hub:**
 
@@ -125,13 +125,16 @@ Choose one of the following methods to publish your image. *Replace placeholders
     ```sh
     docker login
     ```
+    (Enter your Docker Hub username and password when prompted.)
+
 2.  **Tag your locally built image:**
     ```sh
-    docker tag pianonic-music-bot:latest your_dockerhub_username/pianonic-music-bot:latest
+    docker tag pianonic-music-bot:latest pianonic/pianonicsmusic:latest
     ```
+
 3.  **Push the image to Docker Hub:**
     ```sh
-    docker push your_dockerhub_username/pianonic-music-bot:latest
+    docker push pianonic/pianonicsmusic:latest
     ```
 
 **B. Publishing to GitHub Container Registry (GHCR):**
@@ -139,20 +142,23 @@ Choose one of the following methods to publish your image. *Replace placeholders
 1.  **Generate a Personal Access Token (PAT):**
     *   Go to GitHub > Settings > Developer settings > Personal access tokens > Tokens (classic).
     *   Click "Generate new token".
-    *   Select the `write:packages` scope.
-    *   Copy the generated token.
+    *   Ensure the `write:packages` scope is selected (this is crucial for pushing images).
+    *   Copy the generated token immediately, as you won't see it again.
+
 2.  **Log in to GHCR:**
     ```sh
     echo YOUR_GITHUB_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
     ```
+
 3.  **Tag your locally built image:**
+    Tag it with the GHCR format:
     ```sh
-    docker tag pianonic-music-bot:latest ghcr.io/Pianonic/pianonics-music-bot:latest
+    docker tag pianonic-music-bot:latest ghcr.io/pianonic/pianonicsmusic:latest
     ```
-    *(Adjust `Pianonic` to your actual GitHub username if different, and `pianonics-music-bot` to your preferred image name if desired.)*
+
 4.  **Push the image to GHCR:**
     ```sh
-    docker push ghcr.io/Pianonic/pianonics-music-bot:latest
+    docker push ghcr.io/pianonic/pianonicsmusic:latest
     ```
 
 #### Step 2: Update `docker-compose.yml` to Pull from Registry
@@ -164,7 +170,7 @@ Once your image is published, modify your `docker-compose.yml` to use the `image
 ```yaml
 services:
   pianonic-music-bot:
-    image: your_dockerhub_username/pianonic-music-bot:latest # Replace with your Docker Hub image path
+    image: pianonic/pianonicsmusic:latest # Image pulled from Docker Hub
     container_name: pianonic-music-bot
     environment:
       - DISCORD_TOKEN=${DISCORD_TOKEN}
@@ -178,7 +184,7 @@ services:
 ```yaml
 services:
   pianonic-music-bot:
-    image: ghcr.io/Pianonic/pianonics-music-bot:latest # Replace with your GHCR image path
+    image: ghcr.io/pianonic/pianonicsmusic:latest # Image pulled from GitHub Container Registry
     container_name: pianonic-music-bot
     environment:
       - DISCORD_TOKEN=${DISCORD_TOKEN}
