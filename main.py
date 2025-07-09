@@ -286,6 +286,7 @@ async def help(ctx):
         ("force_play", "Force plays the provided audio"),
         ("play", "Plays the provided audio"),
         ("shuffle", "Shuffles the current music queue"),
+        ("queue", "Shows the current music queue"),
         ("information", "Shows bot information and version"),
         ("bot_status", "Shows current bot and queue status"),
         #("play_with_ai_voice", "Plays the provided audio with custom AI voice")
@@ -577,6 +578,10 @@ async def bot_status_slash(ctx):
 async def play_slash(ctx, query: str = None, file: discord.Attachment = None):
     await play_command(ctx, query=query, file=file)
 
+@bot.slash_command(name="queue", description="Shows the current music queue")
+async def queue_slash(ctx):
+    await queue(ctx)
+
 # if isServerRunning:
 #     @bot.slash_command(
 #         name="play_with_ai_voice",
@@ -728,6 +733,51 @@ async def bot_status(ctx):
                 await ctx.send("❗ An error occurred while getting status")
             else:
                 await ctx.respond("❗ An error occurred while getting status")
+        except:
+            pass
+
+@bot.command(aliases=['q', 'show_queue', 'list', 'queue_list'])
+async def queue(ctx):
+    try:
+        guild = await db_utils.get_guild(ctx.guild.id)
+        if not guild or not guild.queue:
+            embed = discord.Embed(
+                title="🎶 Queue",
+                description="The queue is currently empty.",
+                color=0x282841
+            )
+        else:
+            queue_entries = [entry for entry in guild.queue if not getattr(entry, 'already_played', False)]
+            now_playing = next((entry for entry in guild.queue if getattr(entry, 'already_played', False)), None)
+            embed = discord.Embed(
+                title="🎶 Current Queue",
+                color=0x282841
+            )
+            if now_playing:
+                embed.add_field(name="Now Playing", value=f"[{getattr(now_playing, 'title', 'Unknown')}]({getattr(now_playing, 'url', 'N/A')})", inline=False)
+            if queue_entries:
+                for idx, entry in enumerate(queue_entries[:10], start=1):
+                    embed.add_field(
+                        name=f"#{idx}",
+                        value=f"[{getattr(entry, 'title', 'Unknown')}]({getattr(entry, 'url', 'N/A')})",
+                        inline=False
+                    )
+                if len(queue_entries) > 10:
+                    embed.add_field(name="...", value=f"And {len(queue_entries) - 10} more...", inline=False)
+            else:
+                embed.add_field(name="Up Next", value="No more songs in the queue.", inline=False)
+            embed.set_footer(text=get_full_version_info())
+        if ctx.message:
+            await ctx.send(embed=embed)
+        else:
+            await ctx.respond(embed=embed)
+    except Exception as e:
+        print(f"Error in queue command: {e}")
+        try:
+            if ctx.message:
+                await ctx.send("❗ An error occurred while getting the queue.")
+            else:
+                await ctx.respond("❗ An error occurred while getting the queue.")
         except:
             pass
 
