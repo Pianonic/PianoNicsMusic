@@ -93,7 +93,17 @@ async def skip(ctx):
 @bot.command(aliases=['exit', 'quit', 'bye', 'farewell', 'goodbye', 'leave_now', 'disconnect', 'stop_playing'])
 async def leave(ctx):
     try:
-        voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        voice_client = ctx.voice_client
+        user_channel = ctx.author.voice.channel if ctx.author.voice else None
+        bot_channel = voice_client.channel if voice_client else None
+
+        if voice_client and bot_channel:
+            if not user_channel or user_channel.id != bot_channel.id:
+                if ctx.message:
+                    await ctx.send(f"❗ Only users in `{bot_channel.name}` can disconnect the bot. Please join that channel to use this command.")
+                else:
+                    await ctx.respond(f"❗ Only users in `{bot_channel.name}` can disconnect the bot. Please join that channel to use this command.")
+                return
 
         if voice_client:
             try:
