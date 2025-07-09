@@ -171,6 +171,7 @@ Control the bot with simple commands in your server's text channels.
 | `loop` | `repeat` | Toggles looping for the entire queue. | `loop` |
 | `shuffle` | | Toggles shuffle mode, randomizing the queue order. | `shuffle` |
 | `bot_status` | `status`, `np` | Shows the current song and the upcoming queue. | `bot_status` |
+| `queue` | `q`, `show_queue`, `list`, `queue_list` | Shows the current music queue. | `queue` |
 
 ### 🤖 General Commands
 
