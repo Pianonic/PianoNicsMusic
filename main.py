@@ -348,27 +348,9 @@ async def play_command(ctx: discord.ApplicationContext, *, query=None, file: dis
             return
 
     guild = await db_utils.get_guild(ctx.guild.id)
-    await db_utils.add_to_queue(ctx.guild.id, song_urls)
-    
-    if guild:
-        queue_length = len(song_urls)
-
-        if queue_length > 1:
-            if ctx.message:
-                await ctx.send(embed=await embed_generator.create_embed("Queue", f"Added **{queue_length}** Songs to the Queue"))
-            else:
-                await ctx.respond(embed=await embed_generator.create_embed("Queue", f"Added **{queue_length}** Songs to the Queue"))
-
-        else:
-            if ctx.message:
-                await ctx.message.add_reaction("📥")
-            else:
-                await ctx.respond("Added to the queue 📥")
-        
-        return
-    else:
+    if not guild:
         await db_utils.create_new_guild(ctx.guild.id)
-        
+        guild = await db_utils.get_guild(ctx.guild.id)
         # Enhanced voice connection with error handling
         try:
             if not ctx.author.voice or not ctx.author.voice.channel:
@@ -381,7 +363,7 @@ async def play_command(ctx: discord.ApplicationContext, *, query=None, file: dis
             
             await ctx.author.voice.channel.connect()
             print(f"Successfully connected to voice channel: {ctx.author.voice.channel.name}")
-            
+
         except discord.errors.ClientException as e:
             error_msg = "❗ Failed to connect to voice channel. The bot might already be connected elsewhere."
             print(f"Voice connection error: {e}")
@@ -390,7 +372,7 @@ async def play_command(ctx: discord.ApplicationContext, *, query=None, file: dis
             else:
                 await ctx.respond(error_msg)
             return
-            
+        
         except Exception as e:
             error_msg = "❗ An error occurred while connecting to the voice channel. Please try again."
             print(f"Unexpected voice connection error: {e}")
@@ -399,6 +381,21 @@ async def play_command(ctx: discord.ApplicationContext, *, query=None, file: dis
             else:
                 await ctx.respond(error_msg)
             return
+        
+    await db_utils.add_to_queue(ctx.guild.id, song_urls)
+    
+    queue_length = len(song_urls)
+    if queue_length > 1:
+        if ctx.message:
+            await ctx.send(embed=await embed_generator.create_embed("Queue", f"Added **{queue_length}** Songs to the Queue"))
+        else:
+            await ctx.respond(embed=await embed_generator.create_embed("Queue", f"Added **{queue_length}** Songs to the Queue"))
+    elif queue_length == 1:
+        if ctx.message:
+            await ctx.message.add_reaction("📥")
+        else:
+            await ctx.respond("Added to the queue 📥")
+    
     try:
         while True:
             url = await db_utils.get_queue_entry(ctx.guild.id)
