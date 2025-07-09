@@ -157,10 +157,10 @@ Control the bot with simple commands in your server's text channels.
 
 | Command | Aliases | Description | Example |
 | :--- | :--- | :--- | :--- |
-| `play` | `p`, `add` | Plays a song or adds it to the queue. | `play Never Gonna Give You Up` |
+| `play` | `p`, `add` | Plays a song, adds it to the queue, or loads a list of URLs from an attached file. | `play Never Gonna Give You Up`<br>`play` + file attachment |
 | `pause` | `hold` | Pauses the currently playing song. | `pause` |
 | `resume` | `unpause` | Resumes playback if paused. | `resume` |
-| `force_play` | `fp` | Plays a song immediately after the current one finishes. | `force_play My Favorite Song` |
+| `force_play` | `fp` | Plays a song immediately after the current one finishes. | `force_play My Favorite Song`<br>`force_play` + file attachment |
 
 ### 🇶 Queue Management
 
