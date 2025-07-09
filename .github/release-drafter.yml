@@ -1,12 +1,11 @@
 # Release Drafter config for PianoNicsMusic
 name-template: 'v$RESOLVED_VERSION'
-tag-template: 'v$RESOLVED_VERSION'
 
 categories:
   - title: '🚀 Features'
     labels:
       - 'feature'
-  - title: '✨ enhancement'
+  - title: '✨ Enhancements'
     labels:
       - 'enhancement'
   - title: '🐛 Bug Fixes'
@@ -14,25 +13,14 @@ categories:
       - 'bug'
 
 change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
-change-title-escapes: '\<*_&'
 
-version-resolver:
-  major:
-    labels:
-      - 'major'
-      - 'breaking'
-  minor:
-    labels:
-      - 'feature'
-      - 'enhancement'
-  patch:
-    labels:
-      - 'bug'
-  default: patch
+no-changes-template: 'No changes in this release.'
 
 template: |
   ## What's Changed
 
   $CHANGES
 
-  **Full Changelog**: https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
+
+  $CONTRIBUTORS
