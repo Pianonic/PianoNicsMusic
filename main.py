@@ -292,8 +292,19 @@ async def help(ctx):
 
 @bot.command(name='play', aliases=['p', 'pl', 'play_song', 'queue', 'add', 'enqueue'])
 async def play_command(ctx: discord.ApplicationContext, *, query=None):
-    guild = await db_utils.get_guild(ctx.guild.id)
+    voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    user_voice = getattr(ctx.author, 'voice', None)
+    user_channel = getattr(user_voice, 'channel', None)
+    if voice_client and voice_client.channel:
+        if not user_channel or user_channel.id != voice_client.channel.id:
+            error_msg = f"❗ Bot is already playing music in another voice channel: **{voice_client.channel.name}**. Please join that channel to queue music."
+            if ctx.message:
+                await ctx.send(error_msg)
+            else:
+                await ctx.respond(error_msg)
+            return
 
+    guild = await db_utils.get_guild(ctx.guild.id)
     song_urls = await music_url_getter.get_urls(query)
     await db_utils.add_to_queue(ctx.guild.id, song_urls)
     
