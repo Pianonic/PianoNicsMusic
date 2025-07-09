@@ -282,9 +282,10 @@ async def help(ctx):
         ("loop", "Toggles looping of the queue"),
         ("ping", "Checks the bot's latency"),
         ("pause", "Pauses the currently playing audio"),
-        ("resume", "Resumes the currently paused audio"),        ("force_play", "Force plays the provided audio"),
-        ("play", "Plays the provided audio"),        ("shuffle", "Shuffles the current music queue"),
-        ("play_file", "Plays music from a file containing a list of URLs"),
+        ("resume", "Resumes the currently paused audio"),        
+        ("force_play", "Force plays the provided audio"),
+        ("play", "Plays the provided audio"),
+        ("shuffle", "Shuffles the current music queue"),
         ("information", "Shows bot information and version"),
         ("bot_status", "Shows current bot and queue status"),
         #("play_with_ai_voice", "Plays the provided audio with custom AI voice")
@@ -301,7 +302,38 @@ async def help(ctx):
         await ctx.respond(embed=embed)
 
 @bot.command(name='play', aliases=['p', 'pl', 'play_song', 'queue', 'add', 'enqueue'])
-async def play_command(ctx: discord.ApplicationContext, *, query=None):
+async def play_command(ctx: discord.ApplicationContext, *, query=None, file: discord.Attachment = None):
+    if file is None and hasattr(ctx, 'message') and ctx.message and ctx.message.attachments:
+        file = ctx.message.attachments[0]
+
+    song_urls = []
+    if file is not None:
+        try:
+            file_content = await file.read()
+            urls = file_content.decode('utf-8').splitlines()
+            if not urls:
+                if ctx.message:
+                    await ctx.send("The file is empty.")
+                else:
+                    await ctx.respond("The file is empty.")
+                return
+            for url in urls:
+                song_urls.extend(await music_url_getter.get_urls(url))
+        except Exception as e:
+            if ctx.message:
+                await ctx.send(f"Failed to read file: {e}")
+            else:
+                await ctx.respond(f"Failed to read file: {e}")
+            return
+    elif query is not None:
+        song_urls = await music_url_getter.get_urls(query)
+    else:
+        if ctx.message:
+            await ctx.send("Please provide a query or attach a file.")
+        else:
+            await ctx.respond("Please provide a query or attach a file.")
+        return
+
     voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     user_voice = getattr(ctx.author, 'voice', None)
     user_channel = getattr(user_voice, 'channel', None)
@@ -315,7 +347,6 @@ async def play_command(ctx: discord.ApplicationContext, *, query=None):
             return
 
     guild = await db_utils.get_guild(ctx.guild.id)
-    song_urls = await music_url_getter.get_urls(query)
     await db_utils.add_to_queue(ctx.guild.id, song_urls)
     
     if guild:
@@ -405,108 +436,7 @@ async def play_command(ctx: discord.ApplicationContext, *, query=None):
             await db_utils.delete_guild(ctx.guild.id)
         except Exception as e:
             print(f"Error cleaning up guild data: {e}")
-
-@bot.command(name='play_file')
-async def play_file(ctx, *, file: discord.Attachment = None):
-    if file is None:
-        if len(ctx.message.attachments) > 0:
-            file = ctx.message.attachments[0]
-        else:
-            await ctx.send("Please attach a file to play from.")
-            return
-
-    if file is None:
-        await ctx.send("Please attach a file to play from.")
-        return
-
-    try:
-        file_content = await file.read()
-        urls = file_content.decode('utf-8').splitlines()
-        
-        if not urls:
-            await ctx.send("The file is empty.")
-            return
-
-        await ctx.send(f"Adding {len(urls)} songs to the queue...")
-
-        song_urls = []
-        for url in urls:
-            song_urls.extend(await music_url_getter.get_urls(url))
-        
-        await db_utils.add_to_queue(ctx.guild.id, song_urls)
-
-        guild = await db_utils.get_guild(ctx.guild.id)
-        if not guild:
-            await db_utils.create_new_guild(ctx.guild.id)
-            try:
-                if not ctx.author.voice or not ctx.author.voice.channel:
-                    error_msg = "❗ You must be in a voice channel to use this command!"
-                    if ctx.message:
-                        await ctx.send(error_msg)
-                    else:
-                        await ctx.respond(error_msg)
-                    return
-                
-                await ctx.author.voice.channel.connect()
-                print(f"Successfully connected to voice channel: {ctx.author.voice.channel.name}")
-                
-            except discord.errors.ClientException as e:
-                error_msg = "❗ Failed to connect to voice channel. The bot might already be connected elsewhere."
-                print(f"Voice connection error: {e}")
-                if ctx.message:
-                    await ctx.send(error_msg)
-                else:
-                    await ctx.respond(error_msg)
-                return
-                
-            except Exception as e:
-                error_msg = "❗ An error occurred while connecting to the voice channel. Please try again."
-                print(f"Unexpected voice connection error: {e}")
-                if ctx.message:
-                    await ctx.send(error_msg)
-                else:
-                    await ctx.respond(error_msg)
-                return
-        
-        try:
-            while True:
-                url = await db_utils.get_queue_entry(ctx.guild.id)
-
-                if not url:
-                    break
-
-                try:
-                    await player.play(ctx, url)
-                except Exception as e:
-                    print(f"Error playing song {url}: {e}")
-                    try:
-                        error_embed = await embed_generator.create_embed("Error", f"Failed to play a song. Skipping to next...")
-                        if ctx.message:
-                            await ctx.send(embed=error_embed)
-                        else:
-                            await ctx.respond(embed=error_embed)
-                    except:
-                        pass
-                    continue
-                    
-        except Exception as e:
-            print(f"Critical error in play loop: {e}")
-        finally:
-            voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
             
-            if voice_client:
-                try:
-                    await voice_client.disconnect()
-                except:
-                    pass
-                
-            try:
-                await db_utils.delete_guild(ctx.guild.id)
-            except Exception as e:
-                print(f"Error cleaning up guild data: {e}")
-    except Exception as e:
-        await ctx.send(f"An error occurred: {e}")
-
 @bot.command(name="information", aliases=['v', 'ver', 'version'])
 async def information(ctx):
     try:
@@ -640,13 +570,12 @@ async def help_slash(ctx):
 async def bot_status_slash(ctx):
     await bot_status(ctx)
 
-@bot.slash_command(name="play", description="Plays the provided audio", options=[Option(name="query", required=True)])
-async def play_slash(ctx, query: str):
-    await play_command(ctx, query=query)
-
-@bot.slash_command(name="play_file", description="Plays songs from a file", options=[Option(name="file", description="The file to play songs from", type=discord.Attachment, required=True)])
-async def play_file_slash(ctx, file: discord.Attachment):
-    await play_file(ctx, file=file)
+@bot.slash_command(name="play", description="Plays the provided audio", options=[
+    Option(name="query", description="The song name or URL", required=False, type=str),
+    Option(name="file", description="A file containing a list of URLs", type=discord.Attachment, required=False)
+])
+async def play_slash(ctx, query: str = None, file: discord.Attachment = None):
+    await play_command(ctx, query=query, file=file)
 
 # if isServerRunning:
 #     @bot.slash_command(
