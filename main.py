@@ -302,7 +302,7 @@ async def help(ctx):
     else:
         await ctx.respond(embed=embed)
 
-@bot.command(name='play', aliases=['p', 'pl', 'play_song', 'queue', 'add', 'enqueue'])
+@bot.command(name='play', aliases=['p', 'pl', 'play_song', 'add', 'enqueue'])
 async def play_command(ctx: discord.ApplicationContext, *, query=None, file: discord.Attachment = None):
     if file is None and hasattr(ctx, 'message') and ctx.message and ctx.message.attachments:
         file = ctx.message.attachments[0]
