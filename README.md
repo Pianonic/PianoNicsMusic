@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Pianonic/PianoNicsMusic"><img src="https://badgetrack.pianonic.ch/badge?url=https://github.com/Pianonic/PianoNicsMusic&label=Visits&color=2c234a&style=flat&logo=github" alt="Visitor Count"/></a>
+  <a href="https://github.com/Pianonic/PianoNicsMusic"><img src="https://badgetrack.pianonic.ch/badge?tag=piano-nics-music&label=visits&color=2c234a&style=flat" alt="visits" /></a>
   <a href="https://github.com/Pianonic/PianoNicsMusic/blob/main/LICENSE.md"><img src="https://img.shields.io/badge/License-CC%20BY--NC%204.0-2c234a.svg"/></a>
   <a href="https://hub.docker.com/r/pianonic/pianonicsmusic"><img src="https://img.shields.io/badge/Docker_Hub-pianonic/pianonicsmusic-2c234a.svg?logo=docker"/></a>
   <a href="https://github.com/Pianonic/PianoNicsMusic/pkgs/container/pianonicsmusic"><img src="https://img.shields.io/badge/GitHub-ghcr.io-2c234a.svg?logo=github"/></a>
