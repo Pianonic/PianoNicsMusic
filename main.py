@@ -306,6 +306,9 @@ async def help(ctx):
 @bot.command(name='play', aliases=['p', 'pl', 'play_song', 'add', 'enqueue'])
 async def play_command(ctx, *, query=None):
 
+    if ctx.message and ctx.message.attachments and len(ctx.message.attachments) > 0:
+        query = ctx.message.attachments[0].url
+
     if query is not None:
         song_urls = await music_url_getter.get_urls(query)
     else:
