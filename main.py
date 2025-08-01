@@ -367,6 +367,7 @@ async def play_command(ctx, *, query=None):
                 await ctx.respond(embed=await embed_generator.create_error_embed("Connection Error", error_msg))
             return
         
+    isQueueEmpty = (await db_utils.get_queue_total_entries(ctx.guild.id)) == 0
     await db_utils.add_to_queue(ctx.guild.id, song_urls)
     
     queue_length = len(song_urls)
@@ -375,7 +376,11 @@ async def play_command(ctx, *, query=None):
             await ctx.send(embed=await embed_generator.create_embed("Queue", f"Added **{queue_length}** Songs to the Queue"))
         else:
             await ctx.respond(embed=await embed_generator.create_embed("Queue", f"Added **{queue_length}** Songs to the Queue"))
-    elif queue_length == 1:
+
+        if not isQueueEmpty:
+            return
+        
+    elif queue_length == 1 and not isQueueEmpty:
         if ctx.message:
             await ctx.message.add_reaction("📥")
         else:
@@ -383,6 +388,8 @@ async def play_command(ctx, *, query=None):
                 await ctx.respond(embed=await embed_generator.create_success_embed("📥 Added", "Added to the queue"))
             except:
                 await ctx.send(embed=await embed_generator.create_success_embed("📥 Added", "Added to the queue"))
+
+        return
     
     try:
         while True:
