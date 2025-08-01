@@ -304,30 +304,9 @@ async def help(ctx):
         await ctx.respond(embed=embed)
 
 @bot.command(name='play', aliases=['p', 'pl', 'play_song', 'add', 'enqueue'])
-async def play_command(ctx, *, query=None, file=None):
-    if file is None and hasattr(ctx, 'message') and ctx.message and ctx.message.attachments:
-        file = ctx.message.attachments[0]
+async def play_command(ctx, *, query=None):
 
-    song_urls = []
-    if file is not None:
-        try:
-            file_content = await file.read()
-            urls = file_content.decode('utf-8').splitlines()
-            if not urls:
-                if ctx.message:
-                    await ctx.send("The file is empty.")
-                else:
-                    await ctx.respond("The file is empty.")
-                return
-            for url in urls:
-                song_urls.extend(await music_url_getter.get_urls(url))
-        except Exception as e:
-            if ctx.message:
-                await ctx.send(f"Failed to read file: {e}")
-            else:
-                await ctx.respond(f"Failed to read file: {e}")
-            return
-    elif query is not None:
+    if query is not None:
         song_urls = await music_url_getter.get_urls(query)
     else:
         if ctx.message:
@@ -572,12 +551,20 @@ async def help_slash(ctx):
 async def bot_status_slash(ctx):
     await bot_status(ctx)
 
-@bot.slash_command(name="play", description="Plays the provided audio", options=[
-    Option(name="query", description="The song name or URL", required=False, type=str),
-    Option(name="file", description="A file containing a list of URLs", type=discord.Attachment, required=False)
-])
-async def play_slash(ctx, query=None, file=None):
-    await play_command(ctx, query=query, file=file)
+@bot.slash_command(name="play", description="Plays the provided audio")
+async def play_slash(ctx, query: Option(str, "The song name or URL", required=False) = None, file: Option(discord.Attachment, "An audio or video file", required=False) = None):
+    if query and file:
+        await ctx.respond("❗ Please provide either a query OR a file, not both.", ephemeral=True)
+        return
+    
+    if not query and not file:
+        await ctx.respond("❗ Please provide either a query or attach a file.", ephemeral=True)
+        return
+    
+    if file:
+        query = file.url
+
+    await play_command(ctx, query=query)
 
 @bot.slash_command(name="queue", description="Shows the current music queue")
 async def queue_slash(ctx):
