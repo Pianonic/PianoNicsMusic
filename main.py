@@ -43,12 +43,13 @@ bot = commands.Bot(command_prefix=[".", "!", "$"], intents=intents, help_command
 async def on_ready():
     await setup_db()
     await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Activity(type=discord.ActivityType.listening, name="to da kuhle songs"))
-    print(f"Bot is ready and logged in as {bot.user.name}")
+    if bot.user:
+        print(f"Bot is ready and logged in as {bot.user.name}")
     
     ask_in_dms = config.getboolean('Bot', 'AskInDMs', fallback=False)
     admin_userid = config.getint('Admin', 'UserID', fallback=0)
     
-    if ask_in_dms and admin_userid:
+    if ask_in_dms and admin_userid and bot.user:
         user = await bot.fetch_user(admin_userid)
         
         dm_channel = await user.create_dm()
@@ -66,10 +67,10 @@ async def on_ready():
 @bot.command(aliases=['next', 'advance', 'skip_song', 'move_on', 'play_next'])
 async def skip(ctx):
     try:
-        voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        voice_client = discord.utils.get(bot.voice_clients, guild=ctx.guild)
 
         if voice_client:
-            voice_client.stop()
+            voice_client.stop() # type: ignore
         
             if ctx.message:
                 await ctx.message.add_reaction("⏭️")
@@ -142,15 +143,15 @@ async def leave(ctx):
     
 @bot.command(aliases=['hold', 'freeze', 'break', 'wait', 'intermission'])
 async def pause(ctx):
-    voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    voice_client = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         
-    if voice_client:
-        voice_client.pause()
+    if voice_client and hasattr(voice_client, 'pause'):
+        voice_client.pause()  # type: ignore
     
         if ctx.message:
             await ctx.message.add_reaction("⏸️")
         else:
-            await ctx.respond("Paued the music ⏸️")
+            await ctx.respond("Paused the music ⏸️")
 
     else:
         if ctx.message:
@@ -160,10 +161,10 @@ async def pause(ctx):
 
 @bot.command(aliases=['continue', 'unpause', 'proceed', 'restart', 'go', 'resume_playback'])
 async def resume(ctx):
-    voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    voice_client = discord.utils.get(bot.voice_clients, guild=ctx.guild)
 
-    if voice_client:
-        voice_client.resume()
+    if voice_client and hasattr(voice_client, 'resume'):
+        voice_client.resume()  # type: ignore
     
         if ctx.message:
             await ctx.message.add_reaction("▶️")
@@ -207,7 +208,7 @@ async def loop(ctx):
 @bot.command(aliases=['fp', 'forceplay', 'playforce'])
 async def force_play(ctx, *, query=None, insta_skip=False):
     guild = await db_utils.get_guild(ctx.guild.id)
-    voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    voice_client = discord.utils.get(bot.voice_clients, guild=ctx.guild)
 
     if not guild:
         if ctx.message:
@@ -216,18 +217,18 @@ async def force_play(ctx, *, query=None, insta_skip=False):
             await ctx.respond("❗ Bot is not connected to a Voice channel")
         return
 
-    if (len(guild.queue) != 0) and voice_client:
+    if (len(guild.queue) != 0) and voice_client and query:
         await db_utils.add_force_next_play_to_queue(ctx.guild.id, query)
     else:
         await ctx.send("No song is currently playing")
     
-    if insta_skip:
+    if insta_skip and voice_client and hasattr(voice_client, 'stop'):
         if ctx.message:
             await ctx.message.add_reaction("⏭️")
         else:
             await ctx.respond("Force playing Song ⏭️")
 
-        voice_client.stop()
+        voice_client.stop()  # type: ignore
         
     else:
         if ctx.message:
@@ -303,7 +304,7 @@ async def help(ctx):
         await ctx.respond(embed=embed)
 
 @bot.command(name='play', aliases=['p', 'pl', 'play_song', 'add', 'enqueue'])
-async def play_command(ctx: discord.ApplicationContext, *, query=None, file: discord.Attachment = None):
+async def play_command(ctx, *, query=None, file=None):
     if file is None and hasattr(ctx, 'message') and ctx.message and ctx.message.attachments:
         file = ctx.message.attachments[0]
 
@@ -335,12 +336,13 @@ async def play_command(ctx: discord.ApplicationContext, *, query=None, file: dis
             await ctx.respond("Please provide a query or attach a file.")
         return
 
-    voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    voice_client = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     user_voice = getattr(ctx.author, 'voice', None)
     user_channel = getattr(user_voice, 'channel', None)
     if voice_client and voice_client.channel:
-        if not user_channel or user_channel.id != voice_client.channel.id:
-            error_msg = f"❗ Bot is already playing music in another voice channel: **{voice_client.channel.name}**. Please join that channel to queue music."
+        if not user_channel or (hasattr(user_channel, 'id') and hasattr(voice_client.channel, 'id') and getattr(user_channel, 'id', None) != getattr(voice_client.channel, 'id', None)):
+            channel_name = getattr(voice_client.channel, 'name', 'Unknown')
+            error_msg = f"❗ Bot is already playing music in another voice channel: `{channel_name}`. Please join that channel to queue music."
             if ctx.message:
                 await ctx.send(error_msg)
             else:
@@ -353,7 +355,8 @@ async def play_command(ctx: discord.ApplicationContext, *, query=None, file: dis
         guild = await db_utils.get_guild(ctx.guild.id)
         # Enhanced voice connection with error handling
         try:
-            if not ctx.author.voice or not ctx.author.voice.channel:
+            author_voice = getattr(ctx.author, 'voice', None)
+            if not author_voice or not author_voice.channel:
                 error_msg = "❗ You must be in a voice channel to use this command!"
                 if ctx.message:
                     await ctx.send(error_msg)
@@ -361,8 +364,9 @@ async def play_command(ctx: discord.ApplicationContext, *, query=None, file: dis
                     await ctx.respond(error_msg)
                 return
             
-            await ctx.author.voice.channel.connect()
-            print(f"Successfully connected to voice channel: {ctx.author.voice.channel.name}")
+            await author_voice.channel.connect()
+            if hasattr(author_voice.channel, 'name'):
+                print(f"Successfully connected to voice channel: {author_voice.channel.name}")
 
         except discord.errors.ClientException as e:
             error_msg = "❗ Failed to connect to voice channel. The bot might already be connected elsewhere."
@@ -422,11 +426,11 @@ async def play_command(ctx: discord.ApplicationContext, *, query=None, file: dis
         print(f"Critical error in play loop: {e}")
     finally:
         # Always cleanup, even if there was an error
-        voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        voice_client = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         
-        if voice_client:
+        if voice_client and hasattr(voice_client, 'disconnect'):
             try:
-                await voice_client.disconnect()
+                await voice_client.disconnect()  # type: ignore
             except:
                 pass  # Ignore disconnect errors
             
@@ -572,7 +576,7 @@ async def bot_status_slash(ctx):
     Option(name="query", description="The song name or URL", required=False, type=str),
     Option(name="file", description="A file containing a list of URLs", type=discord.Attachment, required=False)
 ])
-async def play_slash(ctx, query: str = None, file: discord.Attachment = None):
+async def play_slash(ctx, query=None, file=None):
     await play_command(ctx, query=query, file=file)
 
 @bot.slash_command(name="queue", description="Shows the current music queue")
@@ -663,7 +667,7 @@ async def queue_slash(ctx):
 @bot.command(aliases=['status', 'current', 'now_playing'])
 async def bot_status(ctx):
     try:
-        voice_client: discord.VoiceClient | None = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        voice_client = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         guild = await db_utils.get_guild(ctx.guild.id)
         
         status_embed = discord.Embed(
@@ -672,8 +676,8 @@ async def bot_status(ctx):
         )
         
         # Voice connection status
-        if voice_client and voice_client.is_connected():
-            channel_name = voice_client.channel.name if voice_client.channel else "Unknown"
+        if voice_client and hasattr(voice_client, 'is_connected') and voice_client.is_connected():  # type: ignore
+            channel_name = getattr(voice_client.channel, 'name', 'Unknown') if voice_client.channel else "Unknown"
             status_embed.add_field(
                 name="🔊 Voice Status", 
                 value=f"Connected to: `{channel_name}`", 
@@ -681,9 +685,9 @@ async def bot_status(ctx):
             )
             
             # Playing status
-            if voice_client.is_playing():
+            if hasattr(voice_client, 'is_playing') and voice_client.is_playing():  # type: ignore
                 status_embed.add_field(name="▶️ Playback", value="Playing", inline=True)
-            elif voice_client.is_paused():
+            elif hasattr(voice_client, 'is_paused') and voice_client.is_paused():  # type: ignore
                 status_embed.add_field(name="⏸️ Playback", value="Paused", inline=True)
             else:
                 status_embed.add_field(name="⏹️ Playback", value="Stopped", inline=True)
