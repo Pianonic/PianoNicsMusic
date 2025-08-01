@@ -380,7 +380,10 @@ async def play_command(ctx, *, query=None):
         if ctx.message:
             await ctx.message.add_reaction("📥")
         else:
-            await ctx.respond("Added to the queue 📥")
+            try:
+                await ctx.respond("Added to the queue 📥")
+            except:
+                await ctx.send("Added to the queue 📥")
     
     try:
         while True:
