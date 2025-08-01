@@ -25,6 +25,8 @@ async def get_streaming_url(downloadURL):
         key_value = data['data']
         soup = BeautifulSoup(key_value, 'html.parser')
         title = soup.find('h1').text.strip()
+        # Remove hashtags from title
+        title = ' '.join(word for word in title.split() if not word.startswith('#'))
         author = soup.find('p').text.strip()
         image_url = soup.find('img')['src']
         download_links = soup.find_all('a', href=True)
