@@ -6,5 +6,6 @@
             "runOnStartup": true,
             "runOnShutdown": true
         }
-    ]
+    ],
+    "python.analysis.typeCheckingMode": "off"
 }
