@@ -34,8 +34,7 @@ model_choices = []
 # if(isServerRunning):
 #     model_choices, index_choices = rvc_server_checker.fetch_choices()
 
-intents = discord.Intents.default()
-intents.message_content = True
+intents = discord.Intents.all()
 
 bot = commands.Bot(command_prefix=[".", "!", "$"], intents=intents, help_command=None)
 
