@@ -1,5 +1,5 @@
 from typing import List
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 from bs4 import BeautifulSoup
 import requests
@@ -138,6 +138,15 @@ async def get_urls(query: str) -> List[str]:
 
     # Soundcloud and Youtube
     elif (audio_content_type is AudioContentType.PLAYLIST or audio_content_type is AudioContentType.RADIO) and platform != Platform.SPOTIFY:
+        
+        # Format YouTube playlist URLs to use proper playlist format
+        if platform is Platform.YOUTUBE:
+            parsed_url = urlparse(query)
+            query_params = parse_qs(parsed_url.query)
+            if 'list' in query_params:
+                playlist_id = query_params['list'][0]
+                query = f"https://www.youtube.com/playlist?list={playlist_id}"
+        
         ydl_opts = {
             'extract_flat': True,
             'quiet': True,
