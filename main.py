@@ -75,19 +75,19 @@ async def skip(ctx):
             if ctx.message:
                 await ctx.message.add_reaction("⏭️")
             else:
-                await ctx.respond("Skipped Song ⏭️")
+                await ctx.respond(embed=await embed_generator.create_success_embed("⏭️ Skipped", "Skipped Song"))
         else:
             if ctx.message:
-                await ctx.send("❗ Bot is not connected to a Voice channel")
+                await ctx.send(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
             else:
-                await ctx.respond("❗ Bot is not connected to a Voice channel")
+                await ctx.respond(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
     except Exception as e:
         print(f"Error in skip command: {e}")
         try:
             if ctx.message:
-                await ctx.send("❗ An error occurred while skipping")
+                await ctx.send(embed=await embed_generator.create_error_embed("Error", "An error occurred while skipping"))
             else:
-                await ctx.respond("❗ An error occurred while skipping")
+                await ctx.respond(embed=await embed_generator.create_error_embed("Error", "An error occurred while skipping"))
         except:
             pass
 
@@ -101,9 +101,9 @@ async def leave(ctx):
         if voice_client and bot_channel:
             if not user_channel or user_channel.id != bot_channel.id:
                 if ctx.message:
-                    await ctx.send(f"❗ Only users in `{bot_channel.name}` can disconnect the bot. Please join that channel to use this command.")
+                    await ctx.send(embed=await embed_generator.create_error_embed("Access Denied", f"Only users in `{bot_channel.name}` can disconnect the bot. Please join that channel to use this command."))
                 else:
-                    await ctx.respond(f"❗ Only users in `{bot_channel.name}` can disconnect the bot. Please join that channel to use this command.")
+                    await ctx.respond(embed=await embed_generator.create_error_embed("Access Denied", f"Only users in `{bot_channel.name}` can disconnect the bot. Please join that channel to use this command."))
                 return
 
         if voice_client:
@@ -125,19 +125,19 @@ async def leave(ctx):
             if ctx.message:
                 await ctx.message.add_reaction("👋")
             else:
-                await ctx.respond("Left the channel 👋")
+                await ctx.respond(embed=await embed_generator.create_success_embed("👋 Goodbye", "Left the channel"))
         else:
             if ctx.message:
-                await ctx.send("❗ Bot is not connected to a Voice channel")
+                await ctx.send(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
             else:
-                await ctx.respond("❗ Bot is not connected to a Voice channel")
+                await ctx.respond(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
     except Exception as e:
         print(f"Error in leave command: {e}")
         try:
             if ctx.message:
-                await ctx.send("❗ An error occurred while leaving")
+                await ctx.send(embed=await embed_generator.create_error_embed("Error", "An error occurred while leaving"))
             else:
-                await ctx.respond("❗ An error occurred while leaving")
+                await ctx.respond(embed=await embed_generator.create_error_embed("Error", "An error occurred while leaving"))
         except:
             pass
     
@@ -151,13 +151,13 @@ async def pause(ctx):
         if ctx.message:
             await ctx.message.add_reaction("⏸️")
         else:
-            await ctx.respond("Paused the music ⏸️")
+            await ctx.respond(embed=await embed_generator.create_success_embed("⏸️ Paused", "Paused the music"))
 
     else:
         if ctx.message:
-            await ctx.send("❗ Bot is not connected to a Voice channel")
+            await ctx.send(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
         else:
-            await ctx.respond("❗ Bot is not connected to a Voice channel")
+            await ctx.respond(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
 
 @bot.command(aliases=['continue', 'unpause', 'proceed', 'restart', 'go', 'resume_playback'])
 async def resume(ctx):
@@ -169,13 +169,13 @@ async def resume(ctx):
         if ctx.message:
             await ctx.message.add_reaction("▶️")
         else:
-            await ctx.respond("Resumed the music ▶️")
+            await ctx.respond(embed=await embed_generator.create_success_embed("▶️ Resumed", "Resumed the music"))
 
     else:
         if ctx.message:
-            await ctx.send("❗ Bot is not connected to a Voice channel")
+            await ctx.send(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
         else:
-            await ctx.respond("❗ Bot is not connected to a Voice channel")
+            await ctx.respond(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
 
 @bot.command()
 async def stop(ctx):
@@ -187,9 +187,9 @@ async def loop(ctx):
 
     if not guild:
         if ctx.message:
-            await ctx.send("❗ Bot is not connected to a Voice channel")
+            await ctx.send(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
         else:
-            await ctx.respond("❗ Bot is not connected to a Voice channel")
+            await ctx.respond(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
         return
     
     is_looping = await db_utils.toggle_loop(ctx.guild.id)
@@ -198,12 +198,12 @@ async def loop(ctx):
         if ctx.message:
             await ctx.message.add_reaction("🔄")
         else:
-            await ctx.respond("Now looping the queue 🔄")
+            await ctx.respond(embed=await embed_generator.create_success_embed("🔄 Loop Enabled", "Now looping the queue"))
     else:
         if ctx.message:
             await ctx.message.add_reaction("⏹️")
         else:
-            await ctx.respond("Stopped looping the queue ⏹️")
+            await ctx.respond(embed=await embed_generator.create_success_embed("⏹️ Loop Disabled", "Stopped looping the queue"))
 
 @bot.command(aliases=['fp', 'forceplay', 'playforce'])
 async def force_play(ctx, *, query=None, insta_skip=False):
@@ -212,21 +212,21 @@ async def force_play(ctx, *, query=None, insta_skip=False):
 
     if not guild:
         if ctx.message:
-            await ctx.send("❗ Bot is not connected to a Voice channel")
+            await ctx.send(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
         else:
-            await ctx.respond("❗ Bot is not connected to a Voice channel")
+            await ctx.respond(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
         return
 
     if (len(guild.queue) != 0) and voice_client and query:
         await db_utils.add_force_next_play_to_queue(ctx.guild.id, query)
     else:
-        await ctx.send("No song is currently playing")
+        await ctx.send(embed=await embed_generator.create_error_embed("Error", "No song is currently playing"))
     
     if insta_skip and voice_client and hasattr(voice_client, 'stop'):
         if ctx.message:
             await ctx.message.add_reaction("⏭️")
         else:
-            await ctx.respond("Force playing Song ⏭️")
+            await ctx.respond(embed=await embed_generator.create_success_embed("⏭️ Force Playing", "Force playing Song"))
 
         voice_client.stop()  # type: ignore
         
@@ -234,7 +234,7 @@ async def force_play(ctx, *, query=None, insta_skip=False):
         if ctx.message:
             await ctx.message.add_reaction("📥")
         else:
-            await ctx.respond("Playing next up 📥")
+            await ctx.respond(embed=await embed_generator.create_success_embed("📥 Queued", "Playing next up"))
 
 @bot.command()
 async def shuffle(ctx):
@@ -242,9 +242,9 @@ async def shuffle(ctx):
 
     if not guild:
         if ctx.message:
-            await ctx.send("❗ Bot is not connected to a Voice channel")
+            await ctx.send(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
         else:
-            await ctx.respond("❗ Bot is not connected to a Voice channel")
+            await ctx.respond(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
         return
 
     shuffle_enabled = await db_utils.shuffle_playlist(ctx.guild.id)
@@ -256,17 +256,17 @@ async def shuffle(ctx):
             await ctx.message.add_reaction("➡️")
     else:
         if shuffle_enabled:
-            await ctx.respond("Now shuffling 🔀")
+            await ctx.respond(embed=await embed_generator.create_success_embed("🔀 Shuffle Enabled", "Now shuffling"))
         else:
-            await ctx.respond("Shuffling disabled ➡️")
+            await ctx.respond(embed=await embed_generator.create_success_embed("➡️ Shuffle Disabled", "Shuffling disabled"))
 
 @bot.command()
 async def ping(ctx):
     latency = round(bot.latency * 1000)
     if ctx.message:
-        await ctx.send(f'Pong! Latency is {latency}ms')
+        await ctx.send(embed=await embed_generator.create_info_embed("🏓 Pong!", f"Latency is {latency}ms"))
     else:
-        await ctx.respond(f'Pong! Latency is {latency}ms')
+        await ctx.respond(embed=await embed_generator.create_info_embed("🏓 Pong!", f"Latency is {latency}ms"))
 
 @bot.command(aliases=['h', 'commands', 'command', 'cmds', 'cmd', 'info', 'assist', 'assistme', 'helpme', 'helppls', 'helpmepls', 'helpmeplease', 'helpmeout', 'helpmeoutpls', 'helpmeoutplease'])
 async def help(ctx):
@@ -313,9 +313,9 @@ async def play_command(ctx, *, query=None):
         song_urls = await music_url_getter.get_urls(query)
     else:
         if ctx.message:
-            await ctx.send("Please provide a query or attach a file.")
+            await ctx.send(embed=await embed_generator.create_error_embed("Missing Input", "Please provide a query or attach a file."))
         else:
-            await ctx.respond("Please provide a query or attach a file.")
+            await ctx.respond(embed=await embed_generator.create_error_embed("Missing Input", "Please provide a query or attach a file."))
         return
 
     voice_client = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -324,11 +324,11 @@ async def play_command(ctx, *, query=None):
     if voice_client and voice_client.channel:
         if not user_channel or (hasattr(user_channel, 'id') and hasattr(voice_client.channel, 'id') and getattr(user_channel, 'id', None) != getattr(voice_client.channel, 'id', None)):
             channel_name = getattr(voice_client.channel, 'name', 'Unknown')
-            error_msg = f"❗ Bot is already playing music in another voice channel: `{channel_name}`. Please join that channel to queue music."
+            error_msg = f"Bot is already playing music in another voice channel: `{channel_name}`. Please join that channel to queue music."
             if ctx.message:
-                await ctx.send(error_msg)
+                await ctx.send(embed=await embed_generator.create_error_embed("Channel Conflict", error_msg))
             else:
-                await ctx.respond(error_msg)
+                await ctx.respond(embed=await embed_generator.create_error_embed("Channel Conflict", error_msg))
             return
 
     guild = await db_utils.get_guild(ctx.guild.id)
@@ -339,11 +339,11 @@ async def play_command(ctx, *, query=None):
         try:
             author_voice = getattr(ctx.author, 'voice', None)
             if not author_voice or not author_voice.channel:
-                error_msg = "❗ You must be in a voice channel to use this command!"
+                error_msg = "You must be in a voice channel to use this command!"
                 if ctx.message:
-                    await ctx.send(error_msg)
+                    await ctx.send(embed=await embed_generator.create_error_embed("Voice Channel Required", error_msg))
                 else:
-                    await ctx.respond(error_msg)
+                    await ctx.respond(embed=await embed_generator.create_error_embed("Voice Channel Required", error_msg))
                 return
             
             await author_voice.channel.connect()
@@ -351,21 +351,21 @@ async def play_command(ctx, *, query=None):
                 print(f"Successfully connected to voice channel: {author_voice.channel.name}")
 
         except discord.errors.ClientException as e:
-            error_msg = "❗ Failed to connect to voice channel. The bot might already be connected elsewhere."
+            error_msg = "Failed to connect to voice channel. The bot might already be connected elsewhere."
             print(f"Voice connection error: {e}")
             if ctx.message:
-                await ctx.send(error_msg)
+                await ctx.send(embed=await embed_generator.create_error_embed("Connection Failed", error_msg))
             else:
-                await ctx.respond(error_msg)
+                await ctx.respond(embed=await embed_generator.create_error_embed("Connection Failed", error_msg))
             return
         
         except Exception as e:
-            error_msg = "❗ An error occurred while connecting to the voice channel. Please try again."
+            error_msg = "An error occurred while connecting to the voice channel. Please try again."
             print(f"Unexpected voice connection error: {e}")
             if ctx.message:
-                await ctx.send(error_msg)
+                await ctx.send(embed=await embed_generator.create_error_embed("Connection Error", error_msg))
             else:
-                await ctx.respond(error_msg)
+                await ctx.respond(embed=await embed_generator.create_error_embed("Connection Error", error_msg))
             return
         
     await db_utils.add_to_queue(ctx.guild.id, song_urls)
@@ -381,9 +381,9 @@ async def play_command(ctx, *, query=None):
             await ctx.message.add_reaction("📥")
         else:
             try:
-                await ctx.respond("Added to the queue 📥")
+                await ctx.respond(embed=await embed_generator.create_success_embed("📥 Added", "Added to the queue"))
             except:
-                await ctx.send("Added to the queue 📥")
+                await ctx.send(embed=await embed_generator.create_success_embed("📥 Added", "Added to the queue"))
     
     try:
         while True:
@@ -479,9 +479,9 @@ async def information(ctx):
         print(f"Error in version command: {e}")
         # Fallback to simple version display
         if ctx.message:
-            await ctx.send(f"PianoNics-Music v{get_version()}")
+            await ctx.send(embed=await embed_generator.create_info_embed("Bot Version", f"PianoNics-Music v{get_version()}"))
         else:
-            await ctx.respond(f"PianoNics-Music v{get_version()}")
+            await ctx.respond(embed=await embed_generator.create_info_embed("Bot Version", f"PianoNics-Music v{get_version()}"))
 
 ###################################################
 ################# SLASH COMMANDS ##################
@@ -560,11 +560,11 @@ async def bot_status_slash(ctx):
 @bot.slash_command(name="play", description="Plays the provided audio")
 async def play_slash(ctx, query: Option(str, "The song name or URL", required=False) = None, file: Option(discord.Attachment, "An audio or video file", required=False) = None):
     if query and file:
-        await ctx.respond("❗ Please provide either a query OR a file, not both.", ephemeral=True)
+        await ctx.respond(embed=await embed_generator.create_error_embed("Invalid Input", "Please provide either a query OR a file, not both."), ephemeral=True)
         return
     
     if not query and not file:
-        await ctx.respond("❗ Please provide either a query or attach a file.", ephemeral=True)
+        await ctx.respond(embed=await embed_generator.create_error_embed("Missing Input", "Please provide either a query or attach a file."), ephemeral=True)
         return
     
     if file:
@@ -724,9 +724,9 @@ async def bot_status(ctx):
         print(f"Error in status command: {e}")
         try:
             if ctx.message:
-                await ctx.send("❗ An error occurred while getting status")
+                await ctx.send(embed=await embed_generator.create_error_embed("Error", "An error occurred while getting status"))
             else:
-                await ctx.respond("❗ An error occurred while getting status")
+                await ctx.respond(embed=await embed_generator.create_error_embed("Error", "An error occurred while getting status"))
         except:
             pass
 
@@ -769,9 +769,9 @@ async def queue(ctx):
         print(f"Error in queue command: {e}")
         try:
             if ctx.message:
-                await ctx.send("❗ An error occurred while getting the queue.")
+                await ctx.send(embed=await embed_generator.create_error_embed("Error", "An error occurred while getting the queue."))
             else:
-                await ctx.respond("❗ An error occurred while getting the queue.")
+                await ctx.respond(embed=await embed_generator.create_error_embed("Error", "An error occurred while getting the queue."))
         except:
             pass
 
