@@ -183,6 +183,15 @@ async def is_queue_empty(guild_id: int) -> bool:
         print(f"Error checking if queue is empty for guild {guild_id}: {e}")
         return True
 
+async def get_queue_total_entries(guild_id: int) -> int:
+    """Get the total number of entries in the queue for a guild."""
+    try:
+        total_entries = QueueEntry.select().where(QueueEntry.guild == guild_id).count()
+        return total_entries
+    except Exception as e:
+        print(f"Error getting queue total entries for guild {guild_id}: {e}")
+        return 0
+
 async def clear_finished_queue_if_needed(guild_id: int):
     """Clear the queue if all songs have been played and loop is disabled"""
     try:
