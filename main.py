@@ -5,6 +5,7 @@ import json
 import os
 import sys
 import logging
+import logging.handlers
 
 # Third-party imports
 import discord
@@ -28,6 +29,53 @@ load_dotenv()
 config = configparser.ConfigParser()
 config.read('config.ini')
 
+# Set up logging
+def setup_logging():
+    """Configure logging for the Discord bot"""
+    # Create logs directory if it doesn't exist
+    os.makedirs('logs', exist_ok=True)
+    
+    # Configure main discord logger
+    logger = logging.getLogger('discord')
+    logger.setLevel(logging.DEBUG)
+    
+    # Set HTTP logger to INFO to reduce noise
+    logging.getLogger('discord.http').setLevel(logging.INFO)
+    
+    # Create rotating file handler
+    handler = logging.handlers.RotatingFileHandler(
+        filename='logs/discord.log',
+        encoding='utf-8',
+        maxBytes=32 * 1024 * 1024,  # 32 MiB
+        backupCount=5,  # Rotate through 5 files
+    )
+    
+    # Create formatter
+    dt_fmt = '%Y-%m-%d %H:%M:%S'
+    formatter = logging.Formatter('[{asctime}] [{levelname:<8}] {name}: {message}', dt_fmt, style='{')
+    handler.setFormatter(formatter)
+    
+    # Add handler to logger
+    logger.addHandler(handler)
+    
+    # Also create a console handler for important messages
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_formatter = logging.Formatter('[{levelname:<8}] {name}: {message}', style='{')
+    console_handler.setFormatter(console_formatter)
+    logger.addHandler(console_handler)
+    
+    # Create application logger
+    app_logger = logging.getLogger('PianoNicsMusic')
+    app_logger.setLevel(logging.DEBUG)
+    app_logger.addHandler(handler)
+    app_logger.addHandler(console_handler)
+    
+    return app_logger
+
+# Initialize logging
+app_logger = setup_logging()
+
 model_choices = []
 
 # isServerRunning = rvc_server_pinger.check_connection()
@@ -43,7 +91,7 @@ async def on_ready():
     await setup_db()
     await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Activity(type=discord.ActivityType.listening, name="to da kuhle songs"))
     if bot.user:
-        print(f"Bot is ready and logged in as {bot.user.name}")
+        app_logger.info(f"Bot is ready and logged in as {bot.user.name}")
     
     ask_in_dms = config.getboolean('Bot', 'AskInDMs', fallback=False)
     admin_userid = config.getint('Admin', 'UserID', fallback=0)
@@ -58,10 +106,41 @@ async def on_ready():
         for msg in messages:
             try:
                 await msg.delete()
-            except:
-                print("skipped message")
+            except Exception as e:
+                app_logger.debug(f"Could not delete DM message: {e}")
 
         await user.send(f"Bot is ready and logged in as {bot.user.name}")
+        app_logger.info(f"Sent ready notification to admin user {admin_userid}")
+
+@bot.event
+async def on_error(event, *args, **kwargs):
+    """Handle errors that occur during event processing"""
+    app_logger.error(f"Error in event {event}", exc_info=True)
+
+@bot.event
+async def on_command_error(ctx, error):
+    """Handle command errors"""
+    if isinstance(error, commands.CommandNotFound):
+        # Don't log command not found errors
+        return
+    elif isinstance(error, commands.MissingRequiredArgument):
+        app_logger.warning(f"Missing argument in command {ctx.command}: {error}")
+        try:
+            await ctx.send(embed=await embed_generator.create_error_embed("Missing Argument", str(error)))
+        except:
+            pass
+    elif isinstance(error, commands.BotMissingPermissions):
+        app_logger.warning(f"Bot missing permissions: {error}")
+        try:
+            await ctx.send(embed=await embed_generator.create_error_embed("Missing Permissions", "The bot doesn't have the required permissions to execute this command."))
+        except:
+            pass
+    else:
+        app_logger.error(f"Unhandled command error in {ctx.command}: {error}", exc_info=True)
+        try:
+            await ctx.send(embed=await embed_generator.create_error_embed("Command Error", "An unexpected error occurred while executing this command."))
+        except:
+            pass
 
 @bot.command(aliases=['next', 'advance', 'skip_song', 'move_on', 'play_next'])
 async def skip(ctx):
@@ -81,14 +160,14 @@ async def skip(ctx):
             else:
                 await ctx.respond(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
     except Exception as e:
-        print(f"Error in skip command: {e}")
+        app_logger.error(f"Error in skip command: {e}")
         try:
             if ctx.message:
                 await ctx.send(embed=await embed_generator.create_error_embed("Error", "An error occurred while skipping"))
             else:
                 await ctx.respond(embed=await embed_generator.create_error_embed("Error", "An error occurred while skipping"))
-        except:
-            pass
+        except Exception as send_error:
+            app_logger.error(f"Failed to send error message: {send_error}")
 
 @bot.command(aliases=['exit', 'quit', 'bye', 'farewell', 'goodbye', 'leave_now', 'disconnect', 'stop_playing'])
 async def leave(ctx):
@@ -109,17 +188,17 @@ async def leave(ctx):
             try:
                 await db_utils.delete_queue(ctx.guild.id)
             except Exception as e:
-                print(f"Error deleting queue: {e}")
+                app_logger.error(f"Error deleting queue: {e}")
             
             try:
                 voice_client.stop()
             except Exception as e:
-                print(f"Error stopping voice client: {e}")
+                app_logger.error(f"Error stopping voice client: {e}")
             
             try:
                 await voice_client.disconnect()
             except Exception as e:
-                print(f"Error disconnecting voice client: {e}")
+                app_logger.error(f"Error disconnecting voice client: {e}")
         
             if ctx.message:
                 await ctx.message.add_reaction("👋")
@@ -131,14 +210,14 @@ async def leave(ctx):
             else:
                 await ctx.respond(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
     except Exception as e:
-        print(f"Error in leave command: {e}")
+        app_logger.error(f"Error in leave command: {e}")
         try:
             if ctx.message:
                 await ctx.send(embed=await embed_generator.create_error_embed("Error", "An error occurred while leaving"))
             else:
                 await ctx.respond(embed=await embed_generator.create_error_embed("Error", "An error occurred while leaving"))
-        except:
-            pass
+        except Exception as send_error:
+            app_logger.error(f"Failed to send error message: {send_error}")
     
 @bot.command(aliases=['hold', 'freeze', 'break', 'wait', 'intermission'])
 async def pause(ctx):
@@ -347,11 +426,11 @@ async def play_command(ctx, *, query=None):
             
             await author_voice.channel.connect()
             if hasattr(author_voice.channel, 'name'):
-                print(f"Successfully connected to voice channel: {author_voice.channel.name}")
+                app_logger.info(f"Successfully connected to voice channel: {author_voice.channel.name}")
 
         except discord.errors.ClientException as e:
             error_msg = "Failed to connect to voice channel. The bot might already be connected elsewhere."
-            print(f"Voice connection error: {e}")
+            app_logger.warning(f"Voice connection error: {e}")
             if ctx.message:
                 await ctx.send(embed=await embed_generator.create_error_embed("Connection Failed", error_msg))
             else:
@@ -360,7 +439,7 @@ async def play_command(ctx, *, query=None):
         
         except Exception as e:
             error_msg = "An error occurred while connecting to the voice channel. Please try again."
-            print(f"Unexpected voice connection error: {e}")
+            app_logger.error(f"Unexpected voice connection error: {e}")
             if ctx.message:
                 await ctx.send(embed=await embed_generator.create_error_embed("Connection Error", error_msg))
             else:
@@ -401,7 +480,7 @@ async def play_command(ctx, *, query=None):
             try:
                 await player.play(ctx, url)
             except Exception as e:
-                print(f"Error playing song {url}: {e}")
+                app_logger.error(f"Error playing song {url}: {e}")
                 # Send error message to user and continue with next song
                 try:
                     error_embed = await embed_generator.create_embed("Error", f"Failed to play a song. Skipping to next...")
@@ -409,12 +488,12 @@ async def play_command(ctx, *, query=None):
                         await ctx.send(embed=error_embed)
                     else:
                         await ctx.respond(embed=error_embed)
-                except:
-                    pass  # If we can't send the error message, continue anyway
+                except Exception as send_error:
+                    app_logger.error(f"Failed to send error message: {send_error}")
                 continue  # Continue to next song instead of breaking
                 
     except Exception as e:
-        print(f"Critical error in play loop: {e}")
+        app_logger.critical(f"Critical error in play loop: {e}")
     finally:
         # Always cleanup, even if there was an error
         voice_client = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -422,13 +501,13 @@ async def play_command(ctx, *, query=None):
         if voice_client and hasattr(voice_client, 'disconnect'):
             try:
                 await voice_client.disconnect()  # type: ignore
-            except:
-                pass  # Ignore disconnect errors
+            except Exception as e:
+                app_logger.error(f"Error disconnecting voice client: {e}")
             
         try:
             await db_utils.delete_guild(ctx.guild.id)
         except Exception as e:
-            print(f"Error cleaning up guild data: {e}")
+            app_logger.error(f"Error cleaning up guild data: {e}")
             
 @bot.command(name="information", aliases=['v', 'ver', 'version'])
 async def information(ctx):
@@ -482,7 +561,7 @@ async def information(ctx):
         else:
             await ctx.respond(embed=version_embed)
     except Exception as e:
-        print(f"Error in version command: {e}")
+        app_logger.error(f"Error in version command: {e}")
         # Fallback to simple version display
         if ctx.message:
             await ctx.send(embed=await embed_generator.create_info_embed("Bot Version", f"PianoNics-Music v{get_version()}"))
@@ -727,14 +806,14 @@ async def bot_status(ctx):
             await ctx.respond(embed=status_embed)
             
     except Exception as e:
-        print(f"Error in status command: {e}")
+        app_logger.error(f"Error in status command: {e}")
         try:
             if ctx.message:
                 await ctx.send(embed=await embed_generator.create_error_embed("Error", "An error occurred while getting status"))
             else:
                 await ctx.respond(embed=await embed_generator.create_error_embed("Error", "An error occurred while getting status"))
-        except:
-            pass
+        except Exception as send_error:
+            app_logger.error(f"Failed to send error message: {send_error}")
 
 @bot.command(aliases=['q', 'show_queue', 'list', 'queue_list'])
 async def queue(ctx):
@@ -772,13 +851,13 @@ async def queue(ctx):
         else:
             await ctx.respond(embed=embed)
     except Exception as e:
-        print(f"Error in queue command: {e}")
+        app_logger.error(f"Error in queue command: {e}")
         try:
             if ctx.message:
                 await ctx.send(embed=await embed_generator.create_error_embed("Error", "An error occurred while getting the queue."))
             else:
                 await ctx.respond(embed=await embed_generator.create_error_embed("Error", "An error occurred while getting the queue."))
-        except:
-            pass
+        except Exception as send_error:
+            app_logger.error(f"Failed to send error message: {send_error}")
 
 bot.run(os.getenv('DISCORD_TOKEN'))

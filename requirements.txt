@@ -1,5 +1,12 @@
-py-cord
+# Latest pycord
+git+https://github.com/Pycord-Development/pycord
+# Pycord Audio dep
 PyNaCl
+# Pycord aiohttp speedup
+aiodns
+brotlipy
+cchardet
+# Rest
 pytube
 yt_dlp
 beautifulsoup4
