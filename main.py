@@ -1,4 +1,5 @@
 # Standard library imports
+import asyncio
 import base64
 import io
 import json
@@ -305,6 +306,11 @@ async def help(ctx):
 @bot.command(name='play', aliases=['p', 'pl', 'play_song', 'add', 'enqueue'])
 async def play_command(ctx, *, query=None):
 
+    # For application commands (slash commands), show "bot is thinking"
+    # Only defer if the interaction hasn't been responded to yet
+    if hasattr(ctx, 'defer') and not ctx.message and not ctx.response.is_done():
+        await ctx.defer()
+
     if ctx.message and ctx.message.attachments and len(ctx.message.attachments) > 0:
         query = ctx.message.attachments[0].url
 
@@ -320,6 +326,8 @@ async def play_command(ctx, *, query=None):
     voice_client = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     user_voice = getattr(ctx.author, 'voice', None)
     user_channel = getattr(user_voice, 'channel', None)
+    
+    # Check if bot is already connected and user is in different channel
     if voice_client and voice_client.channel:
         if not user_channel or (hasattr(user_channel, 'id') and hasattr(voice_client.channel, 'id') and getattr(user_channel, 'id', None) != getattr(voice_client.channel, 'id', None)):
             channel_name = getattr(voice_client.channel, 'name', 'Unknown')
@@ -564,7 +572,10 @@ async def bot_status_slash(ctx):
     await bot_status(ctx)
 
 @bot.slash_command(name="play", description="Plays the provided audio")
-async def play_slash(ctx, query: Option(str, "The song name or URL", required=False) = None, file: Option(discord.Attachment, "An audio or video file", required=False) = None):
+async def play_slash(ctx, query: str = None, file: discord.Attachment = None):
+    # Show "bot is thinking" for slash commands
+    await ctx.defer()
+    
     if query and file:
         await ctx.respond(embed=await embed_generator.create_error_embed("Invalid Input", "Please provide either a query OR a file, not both."), ephemeral=True)
         return
