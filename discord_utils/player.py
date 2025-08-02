@@ -38,6 +38,16 @@ async def play(ctx: discord.ApplicationContext, queue_url: str):
             print("No voice client found")
             raise Exception("Bot is not connected to a voice channel")
         
+        # Add a small delay and check if voice client is actually connected
+        await asyncio.sleep(0.1)
+        if not voice_client.is_connected():
+            print("Voice client exists but is not connected, retrying...")
+            # Wait a bit more for connection to establish
+            await asyncio.sleep(1)
+            if not voice_client.is_connected():
+                print("Voice client still not connected after retry")
+                raise Exception("Not connected to voice.")
+            
         try:
             # Use FFmpeg audio normalization filters
             audio_source = discord.FFmpegPCMAudio(
@@ -45,17 +55,25 @@ async def play(ctx: discord.ApplicationContext, queue_url: str):
                 options='-vn -filter:a loudnorm=I=-25:TP=-1.5:LRA=11', 
                 before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
             )
-              # Stop any currently playing audio before starting new playback
+            # Stop any currently playing audio before starting new playback
             if voice_client.is_playing():
                 voice_client.stop()
+                # Wait a moment for the stop to take effect
+                await asyncio.sleep(0.5)
 
             voice_client.play(audio_source)
+            
         except Exception as e:
             print(f"Error starting playback: {e}")
             raise Exception(f"Failed to start audio playback: {e}")
-        # Wait for playback to finish
-        while voice_client.is_playing() or voice_client.is_paused():
-            await asyncio.sleep(1)
+            
+        # Wait for playback to finish with better error handling
+        try:
+            while voice_client.is_connected() and (voice_client.is_playing() or voice_client.is_paused()):
+                await asyncio.sleep(1)
+        except Exception as e:
+            print(f"Error during playback monitoring: {e}")
+            # Don't raise here, just log the error
                 
     except YouTubeError as e:
         # Don't overwrite the specific YouTube error message that was already set
