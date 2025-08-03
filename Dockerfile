@@ -1,7 +1,7 @@
 FROM python:3.13.5-slim
 
-# Install FFmpeg, git, and other dependencies
-RUN apt-get update && apt-get install -y ffmpeg git
+# Install FFmpeg, git, build tools, and other dependencies
+RUN apt-get update && apt-get install -y ffmpeg git build-essential
 
 # Set the working directory
 WORKDIR /app
