@@ -22,6 +22,7 @@ import db_utils.db_utils as db_utils
 from discord_utils import embed_generator, player
 from ai_server_utils import rvc_server_checker
 from platform_handlers import music_url_getter
+from ddl_retrievers.universal_ddl_retriever import YouTubeError
 from utils import get_version, get_full_version_info, get_version_info
 
 load_dotenv()
@@ -394,7 +395,21 @@ async def play_command(ctx, *, query=None):
         query = ctx.message.attachments[0].url
 
     if query is not None:
-        song_urls = await music_url_getter.get_urls(query)
+        try:
+            song_urls = await music_url_getter.get_urls(query)
+        except YouTubeError as e:
+            if ctx.message:
+                await ctx.send(embed=await embed_generator.create_error_embed("YouTube Playlist Error", str(e)))
+            else:
+                await ctx.respond(embed=await embed_generator.create_error_embed("YouTube Playlist Error", str(e)))
+            return
+        except Exception as e:
+            app_logger.error(f"Error getting URLs for query {query}: {e}")
+            if ctx.message:
+                await ctx.send(embed=await embed_generator.create_error_embed("Error", "Failed to process your request. Please try again."))
+            else:
+                await ctx.respond(embed=await embed_generator.create_error_embed("Error", "Failed to process your request. Please try again."))
+            return
     else:
         if ctx.message:
             await ctx.send(embed=await embed_generator.create_error_embed("Missing Input", "Please provide a query or attach a file."))

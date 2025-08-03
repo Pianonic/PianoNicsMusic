@@ -137,9 +137,7 @@ async def get_urls(query: str) -> List[str]:
             raise NotImplementedError("This type of Spotify content is not implemented.")
 
     # Soundcloud and Youtube
-    elif (audio_content_type is AudioContentType.PLAYLIST or audio_content_type is AudioContentType.RADIO) and platform != Platform.SPOTIFY:
-        
-        # Format YouTube playlist URLs to use proper playlist format
+    elif (audio_content_type is AudioContentType.PLAYLIST or audio_content_type is AudioContentType.RADIO) and platform != Platform.SPOTIFY:        # Format YouTube playlist URLs to use proper playlist format
         if platform is Platform.YOUTUBE:
             parsed_url = urlparse(query)
             query_params = parse_qs(parsed_url.query)
@@ -153,9 +151,17 @@ async def get_urls(query: str) -> List[str]:
             'skip_download': True,
         }
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            playlist_info = ydl.extract_info(query)
-            return [entry['url'] for entry in playlist_info['entries']]
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                playlist_info = ydl.extract_info(query)
+                return [entry['url'] for entry in playlist_info['entries']]
+            
+        except yt_dlp.DownloadError as e:
+            error_message = str(e)
+            if "This playlist type is unviewable" in error_message:
+                raise YouTubeError("This playlist type is unviewable. This often happens with auto-generated YouTube topic playlists. Please try a different playlist or individual songs.")
+            else:
+                raise e
 
     # Anything else
     elif audio_content_type is AudioContentType.YT_DLP:

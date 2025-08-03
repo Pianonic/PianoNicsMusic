@@ -63,6 +63,10 @@ async def get_streaming_url(url) -> MusicInformation:
         elif "live event" in error_message or "live stream" in error_message:
             raise YouTubeError("Live streams are not supported. Please try a regular video.")
         
+        # Handle unviewable playlists (auto-generated topic playlists)
+        elif "This playlist type is unviewable" in error_message:
+            raise YouTubeError("This playlist type is unviewable. This often happens with auto-generated YouTube topic playlists. Please try a different playlist or individual songs.")
+        
         # Generic yt-dlp error
         else:
             raise YouTubeError("Failed to process this video. It may be unavailable or restricted.")
