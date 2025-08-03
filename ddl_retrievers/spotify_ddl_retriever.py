@@ -5,6 +5,9 @@ import yt_dlp as youtube_dl
 from ddl_retrievers import universal_ddl_retriever
 from models.music_information import MusicInformation
 import ytmusicapi
+import logging
+
+logger = logging.getLogger('PianoNicsMusic')
 
 load_dotenv()
 
@@ -25,7 +28,7 @@ async def get_streaming_url(spotify_url) -> MusicInformation:
         return await universal_ddl_retriever.get_streaming_url(youtube_url)
         
     except Exception as spotify_error:
-        print(f"Spotify search failed: {spotify_error}")
+        logger.error(f"Spotify search failed: {spotify_error}")
         
         # Extract song information for YouTube Music search
         try:
@@ -44,7 +47,7 @@ async def get_streaming_url(spotify_url) -> MusicInformation:
         
         # Try YouTube Music as fallback
         try:
-            print(f"Trying YouTube Music search for: {search_query}")
+            logger.info(f"Trying YouTube Music search for: {search_query}")
             yt = ytmusicapi.YTMusic()
             search_results = yt.search(search_query, filter="songs")
             if search_results and len(search_results) > 0:
@@ -55,5 +58,5 @@ async def get_streaming_url(spotify_url) -> MusicInformation:
                 raise Exception("No results found on YouTube Music")
                 
         except Exception as ytmusic_error:
-            print(f"YouTube Music search failed: {ytmusic_error}")
+            logger.error(f"YouTube Music search failed: {ytmusic_error}")
             raise Exception(f"Both Spotify and YouTube Music failed. Spotify error: {spotify_error}")
