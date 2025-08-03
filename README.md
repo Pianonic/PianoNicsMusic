@@ -126,7 +126,7 @@ Control the bot with these simple slash commands in your server's text channels.
 | `resume` | `continue`, `unpause`, `proceed`, `restart`, `go`, `resume_playback` | Resumes playback. | `resume` |
 | `force_play` | `fp`, `forceplay`, `playforce` | Plays a song right after the current one finishes. | `force_play My Favorite Song` |
 
-### �️ Queue Management
+### 🎶 Queue Management
 
 | Command | Aliases | Description | Example |
 | :--- | :--- | :--- | :--- |
