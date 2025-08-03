@@ -5,7 +5,7 @@ PyNaCl
 # Pycord aiohttp speedup
 aiodns
 brotlipy
-cchardet
+charset-normalizer
 # Rest
 pytube
 yt_dlp
