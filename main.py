@@ -31,6 +31,32 @@ load_dotenv()
 config = configparser.ConfigParser()
 config.read('config.ini')
 
+class ColoredFormatter(logging.Formatter):
+    """Custom formatter with colors for console output"""
+    
+    # ANSI color codes
+    COLORS = {
+        'DEBUG': '\033[36m',    # Cyan
+        'INFO': '\033[32m',     # Green
+        'WARNING': '\033[33m',  # Yellow
+        'ERROR': '\033[31m',    # Red
+        'CRITICAL': '\033[35m', # Magenta
+        'RESET': '\033[0m'      # Reset
+    }
+    
+    def format(self, record):
+        # Get the original formatted message
+        log_message = super().format(record)
+        
+        # Add color for the level name
+        level_name = record.levelname
+        if level_name in self.COLORS:
+            # Replace the level name with colored version
+            colored_level = f"{self.COLORS[level_name]}{level_name}{self.COLORS['RESET']}"
+            log_message = log_message.replace(f"[{level_name}]", f"[{colored_level}]")
+        
+        return log_message
+
 # Set up logging
 def setup_logging():
     """Configure logging for the Discord bot"""
@@ -39,7 +65,7 @@ def setup_logging():
     
     # Configure main discord logger
     logger = logging.getLogger('discord')
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     
     # Set HTTP logger to INFO to reduce noise
     logging.getLogger('discord.http').setLevel(logging.INFO)
@@ -52,18 +78,10 @@ def setup_logging():
         backupCount=5,  # Rotate through 5 files
     )
     
-    # Create formatter
-    dt_fmt = '%Y-%m-%d %H:%M:%S'
-    formatter = logging.Formatter('[{asctime}] [{levelname:<8}] {name}: {message}', dt_fmt, style='{')
-    handler.setFormatter(formatter)
-    
-    # Add handler to logger
-    logger.addHandler(handler)
-    
     # Also create a console handler for important messages
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
-    console_formatter = logging.Formatter('[{levelname:<8}] {name}: {message}', style='{')
+    console_formatter = ColoredFormatter('[{levelname}] {name}: {message}', style='{')
     console_handler.setFormatter(console_formatter)
     logger.addHandler(console_handler)
     
@@ -72,7 +90,9 @@ def setup_logging():
     app_logger.setLevel(logging.DEBUG)
     app_logger.addHandler(handler)
     app_logger.addHandler(console_handler)
-    
+
+    app_logger.propagate = False
+
     return app_logger
 
 # Initialize logging

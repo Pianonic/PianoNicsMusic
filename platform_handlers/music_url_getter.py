@@ -19,6 +19,9 @@ from ddl_retrievers.universal_ddl_retriever import YouTubeError
 from spotipy import SpotifyClientCredentials
 import spotipy
 import os
+import logging
+
+logger = logging.getLogger('PianoNicsMusic')
 
 async def get_streaming_url(query_url: str) -> MusicInformation:
     platform = await find_platform(query_url)
@@ -67,7 +70,7 @@ async def get_streaming_url(query_url: str) -> MusicInformation:
     except Exception as e:
         # Only log serious errors, skip common "not found" errors
         if "No results found" not in str(e) and "list index out of range" not in str(e):
-            print(f"Error getting streaming URL for {query_url}: {e}")
+            logger.error(f"Error getting streaming URL for {query_url}: {e}")
         raise e
 
 async def get_urls(query: str) -> List[str]:
@@ -109,7 +112,7 @@ async def get_urls(query: str) -> List[str]:
                     else:
                         raise Exception("No results found on YouTube")
             except Exception:
-                print(f"Could not find: {query}")
+                logger.warning(f"Could not find: {query}")
                 return []
     
     elif audio_content_type is AudioContentType.SINGLE_SONG:

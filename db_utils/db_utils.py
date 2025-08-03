@@ -1,4 +1,5 @@
 import random
+import logging
 from typing import List
 from models.dtos.QueueEntryDto import QueueEntryDto
 from models.dtos.GuildDto import GuildDto
@@ -6,11 +7,13 @@ from models.guild_music_information import Guild
 from models.queue_object import QueueEntry
 from models.mappers import guild_music_information_mapper
 
+logger = logging.getLogger('PianoNicsMusic')
+
 async def create_new_guild(discord_guild_id: int):
     try:
         Guild.create(id=discord_guild_id, loop_queue=False, shuffle_queue=False)
     except Exception as e:
-        print(f"Error creating guild {discord_guild_id}: {e}")
+        logger.error(f"Error creating guild {discord_guild_id}: {e}")
         # Try to get existing guild if creation failed
         existing_guild = Guild.get_or_none(Guild.id == discord_guild_id)
         if not existing_guild:
@@ -23,14 +26,14 @@ async def get_guild(discord_guild_id: int) -> GuildDto | None:
             return guild_music_information_mapper.map(guild)
         return None
     except Exception as e:
-        print(f"Error getting guild {discord_guild_id}: {e}")
+        logger.error(f"Error getting guild {discord_guild_id}: {e}")
         return None
 
 async def delete_queue(guild_id: int):
     try:
         QueueEntry.delete().where(QueueEntry.guild == guild_id).execute()
     except Exception as e:
-        print(f"Error deleting queue for guild {guild_id}: {e}")
+        logger.error(f"Error deleting queue for guild {guild_id}: {e}")
         # Continue anyway, this is cleanup
 
 async def add_to_queue(guild_id: int, song_urls: List[str]):
@@ -40,13 +43,13 @@ async def add_to_queue(guild_id: int, song_urls: List[str]):
         queue_entries = [QueueEntry(guild=guild_id, url=url, already_played=False, force_play=False) for url in song_urls]
         QueueEntry.bulk_create(queue_entries)
     except Exception as e:
-        print(f"Error adding songs to queue for guild {guild_id}: {e}")
+        logger.error(f"Error adding songs to queue for guild {guild_id}: {e}")
         # Try adding one by one if bulk create fails
         try:
             for url in song_urls:
                 QueueEntry.create(guild=guild_id, url=url, already_played=False, force_play=False)
         except Exception as e2:
-            print(f"Error adding songs individually: {e2}")
+            logger.error(f"Error adding songs individually: {e2}")
             raise e2
 
 async def add_force_next_play_to_queue(guild_id: int, song_url: str):
@@ -72,7 +75,7 @@ async def _mark_entry_as_listened(entry: QueueEntry):
         entry.force_play = False
         entry.save()
     except Exception as e:
-        print(f"Error marking entry as listened: {e}")
+        logger.error(f"Error marking entry as listened: {e}")
 
 async def get_queue_entry(guild_id: int) -> str | None:
     try:
@@ -107,19 +110,19 @@ async def get_queue_entry(guild_id: int) -> str | None:
                 QueueEntry.update(already_played=False).where(QueueEntry.guild == guild_id).execute()
                 return await _get_entry_after_reset(guild_id)
             except Exception as e:
-                print(f"Error resetting queue for guild {guild_id}: {e}")
+                logger.error(f"Error resetting queue for guild {guild_id}: {e}")
                 return None
         
         # If we reach here, the queue is finished and not looping - clear it
         try:
             await delete_queue(guild_id)
-            print(f"Queue cleared for guild {guild_id} - all songs played")
+            logger.info(f"Queue cleared for guild {guild_id} - all songs played")
         except Exception as e:
-            print(f"Error clearing finished queue for guild {guild_id}: {e}")
+            logger.error(f"Error clearing finished queue for guild {guild_id}: {e}")
         
         return None
     except Exception as e:
-        print(f"Error getting queue entry for guild {guild_id}: {e}")
+        logger.error(f"Error getting queue entry for guild {guild_id}: {e}")
         return None
 
 async def _get_entry_after_reset(guild_id: int) -> str | None:
@@ -180,7 +183,7 @@ async def is_queue_empty(guild_id: int) -> bool:
         ).count()
         return remaining_entries == 0
     except Exception as e:
-        print(f"Error checking if queue is empty for guild {guild_id}: {e}")
+        logger.error(f"Error checking if queue is empty for guild {guild_id}: {e}")
         return True
 
 async def get_queue_total_entries(guild_id: int) -> int:
@@ -189,7 +192,7 @@ async def get_queue_total_entries(guild_id: int) -> int:
         total_entries = QueueEntry.select().where(QueueEntry.guild == guild_id).count()
         return total_entries
     except Exception as e:
-        print(f"Error getting queue total entries for guild {guild_id}: {e}")
+        logger.error(f"Error getting queue total entries for guild {guild_id}: {e}")
         return 0
 
 async def clear_finished_queue_if_needed(guild_id: int):
@@ -202,6 +205,6 @@ async def clear_finished_queue_if_needed(guild_id: int):
         # Only clear if not looping and queue is empty
         if not guild.loop_queue and await is_queue_empty(guild_id):
             await delete_queue(guild_id)
-            print(f"Queue automatically cleared for guild {guild_id}")
+            logger.info(f"Queue automatically cleared for guild {guild_id}")
     except Exception as e:
-        print(f"Error auto-clearing queue for guild {guild_id}: {e}")
+        logger.error(f"Error auto-clearing queue for guild {guild_id}: {e}")
