@@ -1,4 +1,7 @@
 from peewee import SqliteDatabase
+import logging
+
+logger = logging.getLogger('PianoNicsMusic')
 
 db = SqliteDatabase(':memory:')
 
@@ -13,7 +16,7 @@ async def setup_db():
         
         # Create tables if they don't exist
         db.create_tables([Guild, QueueEntry], safe=True)
-        print("In-memory database setup completed successfully")
+        logger.info("In-memory database setup completed successfully")
     except Exception as e:
-        print(f"Error setting up database: {e}")
+        logger.error(f"Error setting up database: {e}")
         raise e

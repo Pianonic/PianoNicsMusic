@@ -1,4 +1,7 @@
 import requests
+import logging
+
+logger = logging.getLogger('PianoNicsMusic')
 
 def fetch_choices():
     try:
@@ -19,5 +22,5 @@ def check_connection():
         response.raise_for_status()
         return True
     except:
-        print("Server is not running. Please start the AI server.")
+        logger.warning("Server is not running. Please start the AI server.")
         return False
