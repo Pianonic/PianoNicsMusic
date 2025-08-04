@@ -66,6 +66,10 @@ jobs:
           push: true # Push the multi-arch manifest list
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Pass release version and date as build args
+          build-args: |
+            GITHUB_RELEASE_VERSION=${{ github.event.release.tag_name }}
+            GITHUB_RELEASE_DATE=${{ github.event.release.published_at }}
           # Enable GitHub Actions cache for faster builds
           cache-from: type=gha
           cache-to: type=gha,mode=max
