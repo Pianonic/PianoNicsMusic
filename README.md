@@ -172,3 +172,4 @@ See the [LICENSE.md](https://github.com/Pianonic/PianoNicsMusic/blob/main/LICENS
 
 ---
 <p align="center">Made with ❤️ by <a href="https://github.com/Pianonic">Pianonic</a></p>
+ 
