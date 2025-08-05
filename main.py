@@ -20,6 +20,7 @@ import configparser
 from db_utils.db import setup_db
 import db_utils.db_utils as db_utils
 from discord_utils import embed_generator, player
+from discord_utils.dynamic_volume import set_guild_volume, adjust_guild_volume, get_guild_current_volume
 from ai_server_utils import rvc_server_checker
 from platform_handlers import music_url_getter
 from ddl_retrievers.universal_ddl_retriever import YouTubeError
@@ -277,6 +278,159 @@ async def resume(ctx):
         else:
             await ctx.respond(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
 
+@bot.command(aliases=['v', 'vol', 'sound'])
+async def volume(ctx, *, level=None):
+    """Set or get the current volume level (0-100)"""
+    try:
+        guild = await db_utils.get_guild(ctx.guild.id)
+        if not guild:
+            if ctx.message:
+                await ctx.send(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
+            else:
+                await ctx.respond(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
+            return
+
+        if level is None:
+            # Get current volume - try real-time first, then database
+            current_volume_float = get_guild_current_volume(ctx.guild.id)
+            if current_volume_float is None:
+                current_volume_float = guild.volume
+            
+            current_volume = int(current_volume_float * 100)
+            volume_bar = "█" * (current_volume // 10) + "░" * (10 - current_volume // 10)
+            
+            if ctx.message:
+                await ctx.send(embed=await embed_generator.create_embed("🔊 Current Volume", f"{current_volume}% [{volume_bar}]"))
+            else:
+                await ctx.respond(embed=await embed_generator.create_embed("🔊 Current Volume", f"{current_volume}% [{volume_bar}]"))
+        else:
+            # Set volume
+            try:
+                volume_level = int(level)
+                if volume_level < 0 or volume_level > 100:
+                    raise ValueError("Volume must be between 0 and 100")
+                
+                volume_float = volume_level / 100.0
+                
+                # Update database
+                success = await db_utils.set_volume(ctx.guild.id, volume_float)
+                
+                # Update real-time volume if currently playing
+                realtime_updated = set_guild_volume(ctx.guild.id, volume_float)
+                
+                if success:
+                    volume_bar = "█" * (volume_level // 10) + "░" * (10 - volume_level // 10)
+                    
+                    status_text = f"Volume set to {volume_level}% [{volume_bar}]"
+                    
+                    if ctx.message:
+                        await ctx.message.add_reaction("🔊")
+                    else:
+                        await ctx.respond(embed=await embed_generator.create_success_embed("🔊 Volume Set", status_text))
+                else:
+                    if ctx.message:
+                        await ctx.send(embed=await embed_generator.create_error_embed("Error", "Failed to set volume"))
+                    else:
+                        await ctx.respond(embed=await embed_generator.create_error_embed("Error", "Failed to set volume"))
+                        
+            except ValueError:
+                if ctx.message:
+                    await ctx.send(embed=await embed_generator.create_error_embed("Invalid Volume", "Please enter a number between 0 and 100"))
+                else:
+                    await ctx.respond(embed=await embed_generator.create_error_embed("Invalid Volume", "Please enter a number between 0 and 100"))
+                    
+    except Exception as e:
+        app_logger.error(f"Error in volume command: {e}")
+        try:
+            if ctx.message:
+                await ctx.send(embed=await embed_generator.create_error_embed("Error", "An error occurred while setting volume"))
+            else:
+                await ctx.respond(embed=await embed_generator.create_error_embed("Error", "An error occurred while setting volume"))
+        except Exception as send_error:
+            app_logger.error(f"Failed to send error message: {send_error}")
+
+@bot.command(aliases=['vol+', 'louder'])
+async def volume_up(ctx):
+    """Increase volume by 10%"""
+    try:
+        guild = await db_utils.get_guild(ctx.guild.id)
+        if not guild:
+            if ctx.message:
+                await ctx.send(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
+            else:
+                await ctx.respond(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
+            return
+
+        # Try real-time adjustment first
+        realtime_volume = adjust_guild_volume(ctx.guild.id, 0.1)
+        
+        # Update database
+        new_volume = await db_utils.adjust_volume(ctx.guild.id, 0.1)
+        
+        # Use real-time volume if available, otherwise use database volume
+        volume_to_display = realtime_volume if realtime_volume is not None else new_volume
+        
+        volume_level = int(volume_to_display * 100)
+        volume_bar = "█" * (volume_level // 10) + "░" * (10 - volume_level // 10)
+        
+        status_text = f"Volume increased to {volume_level}% [{volume_bar}]"
+        
+        if ctx.message:
+            await ctx.message.add_reaction("🔊")
+        else:
+            await ctx.respond(embed=await embed_generator.create_success_embed("🔊 Volume Up", status_text))
+            
+    except Exception as e:
+        app_logger.error(f"Error in volume_up command: {e}")
+        try:
+            if ctx.message:
+                await ctx.send(embed=await embed_generator.create_error_embed("Error", "An error occurred while adjusting volume"))
+            else:
+                await ctx.respond(embed=await embed_generator.create_error_embed("Error", "An error occurred while adjusting volume"))
+        except Exception as send_error:
+            app_logger.error(f"Failed to send error message: {send_error}")
+
+@bot.command(aliases=['vol-', 'quieter'])
+async def volume_down(ctx):
+    """Decrease volume by 10%"""
+    try:
+        guild = await db_utils.get_guild(ctx.guild.id)
+        if not guild:
+            if ctx.message:
+                await ctx.send(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
+            else:
+                await ctx.respond(embed=await embed_generator.create_error_embed("Error", "Bot is not connected to a Voice channel"))
+            return
+
+        # Try real-time adjustment first
+        realtime_volume = adjust_guild_volume(ctx.guild.id, -0.1)
+        
+        # Update database
+        new_volume = await db_utils.adjust_volume(ctx.guild.id, -0.1)
+        
+        # Use real-time volume if available, otherwise use database volume
+        volume_to_display = realtime_volume if realtime_volume is not None else new_volume
+        
+        volume_level = int(volume_to_display * 100)
+        volume_bar = "█" * (volume_level // 10) + "░" * (10 - volume_level // 10)
+        
+        status_text = f"Volume decreased to {volume_level}% [{volume_bar}]"
+        
+        if ctx.message:
+            await ctx.message.add_reaction("🔉")
+        else:
+            await ctx.respond(embed=await embed_generator.create_success_embed("🔉 Volume Down", status_text))
+            
+    except Exception as e:
+        app_logger.error(f"Error in volume_down command: {e}")
+        try:
+            if ctx.message:
+                await ctx.send(embed=await embed_generator.create_error_embed("Error", "An error occurred while adjusting volume"))
+            else:
+                await ctx.respond(embed=await embed_generator.create_error_embed("Error", "An error occurred while adjusting volume"))
+        except Exception as send_error:
+            app_logger.error(f"Failed to send error message: {send_error}")
+
 @bot.command()
 async def stop(ctx):
     await leave(ctx)
@@ -374,8 +528,7 @@ async def help(ctx):
         title="Bot Commands",
         description="Here are all the available commands:",
         color=0x282841
-    )
-
+    )    
     commands_list = [
         ("stop", "Stops the currently playing audio"),
         ("skip", "Skips the currently playing audio"),
@@ -383,7 +536,10 @@ async def help(ctx):
         ("loop", "Toggles looping of the queue"),
         ("ping", "Checks the bot's latency"),
         ("pause", "Pauses the currently playing audio"),
-        ("resume", "Resumes the currently paused audio"),        
+        ("resume", "Resumes the currently paused audio"),
+        ("volume", "Sets or shows the current volume (0-100)"),
+        ("volume_up", "Increases volume by 10%"),
+        ("volume_down", "Decreases volume by 10%"),
         ("force_play", "Force plays the provided audio"),
         ("play", "Plays the provided audio"),
         ("shuffle", "Shuffles the current music queue"),
@@ -552,7 +708,7 @@ async def play_command(ctx, *, query=None):
         except Exception as e:
             app_logger.error(f"Error cleaning up guild data: {e}")
             
-@bot.command(name="information", aliases=['v', 'ver', 'version'])
+@bot.command(name="information", aliases=['ver', 'version'])
 async def information(ctx):
     try:
         version_info = get_version_info()
@@ -707,6 +863,18 @@ async def play_slash(ctx, query: str = None, file: discord.Attachment = None):
 async def queue_slash(ctx):
     await queue(ctx)
 
+@bot.slash_command(name="volume", description="Sets or shows the current volume (0-100)")
+async def volume_slash(ctx, level: int = None):
+    await volume(ctx, level=level)
+
+@bot.slash_command(name="volume_up", description="Increases volume by 10%")
+async def volume_up_slash(ctx):
+    await volume_up(ctx)
+
+@bot.slash_command(name="volume_down", description="Decreases volume by 10%")
+async def volume_down_slash(ctx):
+    await volume_down(ctx)
+
 # if isServerRunning:
 #     @bot.slash_command(
 #         name="play_with_ai_voice",
@@ -828,18 +996,24 @@ async def bot_status(ctx):
                 name="📝 Queue", 
                 value=f"{queue_count} remaining / {total_queue} total", 
                 inline=True
-            )
-            
-            # Loop and shuffle status
+            )            # Loop, shuffle, and volume status
             loop_status = "🔄 On" if guild.loop_queue else "⏹️ Off"
             shuffle_status = "🔀 On" if guild.shuffle_queue else "➡️ Off"
             
+            # Get real-time volume if available, otherwise use database volume
+            current_volume_float = get_guild_current_volume(ctx.guild.id)
+            if current_volume_float is None:
+                current_volume_float = guild.volume
+            volume_status = f"🔊 {int(current_volume_float * 100)}%"
+            
             status_embed.add_field(name="Loop", value=loop_status, inline=True)
             status_embed.add_field(name="Shuffle", value=shuffle_status, inline=True)
+            status_embed.add_field(name="Volume", value=volume_status, inline=True)
         else:
             status_embed.add_field(name="📝 Queue", value="No active session", inline=True)
             status_embed.add_field(name="Loop", value="⏹️ Off", inline=True)
             status_embed.add_field(name="Shuffle", value="➡️ Off", inline=True)
+            status_embed.add_field(name="Volume", value="🔊 100%", inline=True)
           # Server info
         latency = round(bot.latency * 1000)
         status_embed.add_field(name="📡 Latency", value=f"{latency}ms", inline=True)

@@ -3,8 +3,10 @@ import discord
 import logging
 
 from discord_utils import embed_generator
+from discord_utils.dynamic_volume import DynamicVolumeTransformer, register_audio_source, unregister_audio_source
 from platform_handlers import music_url_getter
 from ddl_retrievers.universal_ddl_retriever import YouTubeError
+from db_utils import db_utils
 
 logger = logging.getLogger('PianoNicsMusic')
 
@@ -52,12 +54,22 @@ async def play(ctx: discord.ApplicationContext, queue_url: str):
                 raise Exception("Not connected to voice.")
             
         try:
+            # Get the current volume for this guild
+            volume = await db_utils.get_volume(ctx.guild.id)
+            
             # Use FFmpeg audio normalization filters
             audio_source = discord.FFmpegPCMAudio(
                 music_information.streaming_url, 
                 options='-vn -filter:a loudnorm=I=-25:TP=-1.5:LRA=11', 
                 before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
             )
+            
+            # Apply dynamic volume transformation
+            audio_source = DynamicVolumeTransformer(audio_source, volume=volume)
+            
+            # Register the audio source for real-time volume control
+            register_audio_source(ctx.guild.id, audio_source)
+            
             # Stop any currently playing audio before starting new playback
             if voice_client.is_playing():
                 voice_client.stop()
@@ -77,6 +89,9 @@ async def play(ctx: discord.ApplicationContext, queue_url: str):
         except Exception as e:
             logger.error(f"Error during playback monitoring: {e}")
             # Don't raise here, just log the error
+        finally:
+            # Unregister the audio source when playback finishes
+            unregister_audio_source(ctx.guild.id)
                 
     except YouTubeError as e:
         # Don't overwrite the specific YouTube error message that was already set

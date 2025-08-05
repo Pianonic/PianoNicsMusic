@@ -11,7 +11,7 @@ logger = logging.getLogger('PianoNicsMusic')
 
 async def create_new_guild(discord_guild_id: int):
     try:
-        Guild.create(id=discord_guild_id, loop_queue=False, shuffle_queue=False)
+        Guild.create(id=discord_guild_id, loop_queue=False, shuffle_queue=False, volume=1.0)
     except Exception as e:
         logger.error(f"Error creating guild {discord_guild_id}: {e}")
         # Try to get existing guild if creation failed
@@ -208,3 +208,46 @@ async def clear_finished_queue_if_needed(guild_id: int):
             logger.info(f"Queue automatically cleared for guild {guild_id}")
     except Exception as e:
         logger.error(f"Error auto-clearing queue for guild {guild_id}: {e}")
+
+async def set_volume(guild_id: int, volume: float) -> bool:
+    """Set the volume for a guild. Volume should be between 0.0 and 1.0"""
+    try:
+        # Clamp volume between 0.0 and 1.0
+        volume = max(0.0, min(1.0, volume))
+        
+        guild: Guild | None = Guild.get_or_none(Guild.id == guild_id)
+        if not guild:
+            return False
+        
+        guild.volume = volume
+        guild.save()
+        return True
+    except Exception as e:
+        logger.error(f"Error setting volume for guild {guild_id}: {e}")
+        return False
+
+async def get_volume(guild_id: int) -> float:
+    """Get the current volume for a guild"""
+    try:
+        guild: Guild | None = Guild.get_or_none(Guild.id == guild_id)
+        if not guild:
+            return 1.0  # Default volume
+        return guild.volume
+    except Exception as e:
+        logger.error(f"Error getting volume for guild {guild_id}: {e}")
+        return 1.0  # Default volume
+
+async def adjust_volume(guild_id: int, adjustment: float) -> float:
+    """Adjust the volume by a certain amount. Returns the new volume level."""
+    try:
+        guild: Guild | None = Guild.get_or_none(Guild.id == guild_id)
+        if not guild:
+            return 1.0
+        
+        new_volume = max(0.0, min(1.0, guild.volume + adjustment))
+        guild.volume = new_volume
+        guild.save()
+        return new_volume
+    except Exception as e:
+        logger.error(f"Error adjusting volume for guild {guild_id}: {e}")
+        return 1.0
